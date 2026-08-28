@@ -1,5 +1,9 @@
 // LifeOS Service Worker — cache do app pra funcionar 100% offline
-const CACHE_NAME = 'lifeos-cache-v1';
+// v2: agora tenta a rede PRIMEIRO (pra sempre pegar a versão mais nova quando
+// tem internet) e só usa o cache guardado se estiver offline. Antes, o cache
+// era mostrado antes de checar se tinha algo novo, então atualizações do app
+// não apareciam até um segundo carregamento.
+const CACHE_NAME = 'lifeos-cache-v2';
 const APP_SHELL = [
   './',
   './index.html',
@@ -25,21 +29,18 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Cache-first: usa o que já tem salvo, e atualiza em segundo plano quando online
+// Network-first: tenta buscar a versão mais nova; só usa o cache se estiver offline
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const fetchPromise = fetch(event.request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return networkResponse;
-        })
-        .catch(() => cached);
-      return cached || fetchPromise;
-    })
+    fetch(event.request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return networkResponse;
+      })
+      .catch(() => caches.match(event.request))
   );
 });

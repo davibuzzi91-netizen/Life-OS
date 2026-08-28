@@ -192,7 +192,7 @@ button{cursor:pointer; border:none; background:none;}
   position:fixed; inset:0; z-index:300;
   background:var(--bg);
   display:none; flex-direction:column;
-  transform:scale(0.3); opacity:0; border-radius:50%;
+  transform:scale(0.3); opacity:0;
   overflow:hidden;
 }
 .panel.active{display:flex;}
@@ -737,7 +737,7 @@ if(!DB.achievements){ DB.achievements={unlocked:[], equipped:null}; }
 if(!DB.settings.widgetSizes){ DB.settings.widgetSizes={}; }
 if(!DB.settings.pets){ DB.settings.pets={steve:false, gato:false, cachorro:false}; }
 if(!DB.settings.petPositions){ DB.settings.petPositions={}; }
-DB.settings.version='3.0.1 (alfa)';
+DB.settings.version='3.2 (alfa)';
 if(DB._isFreshInstall){ DB.settings.lastSeenVersion = DB.settings.version; delete DB._isFreshInstall; }
 saveDB();
 
@@ -818,9 +818,8 @@ async function pinPress(k){
   }
 }
 const CURRENT_VERSION_NOTES = [
-  '⚡ Mega otimização: fundo animado, botões e vidro líquido ficaram bem mais leves',
-  'Pets removidos temporariamente (voltam numa próxima atualização, corrigidos)',
-  'Exportar/importar backup revisados'
+  '⚡ Animação de abrir/fechar módulos totalmente reconstruída — bem mais leve e rápida',
+  'Removido o efeito que fazia o cantinho arredondar durante a animação (era o que mais pesava)'
 ];
 function unlockApp(){
   document.getElementById('lock').style.display='none';
@@ -907,21 +906,21 @@ function openModule(id, evt){
   const sx = rect.width/window.innerWidth, sy = rect.height/window.innerHeight;
   PANEL_ORIGINS[id] = {cx, cy, sx, sy};
   document.body.classList.add('panel-open');
+  document.getElementById('home').style.display='none';
+  panel.style.willChange='transform, opacity';
   panel.style.transition='none';
   panel.style.transformOrigin = cx+'px '+cy+'px';
   panel.style.transform = 'scale('+sx+','+sy+')';
-  panel.style.borderRadius='50%';
   panel.style.opacity='0';
   panel.classList.add('active');
   // force reflow so the browser registers the start state before animating
   panel.offsetHeight;
   requestAnimationFrame(()=>{
-    panel.style.transition='transform .4s cubic-bezier(.22,.8,.28,1), border-radius .4s ease, opacity .28s ease';
+    panel.style.transition='transform .28s cubic-bezier(.22,.8,.28,1), opacity .22s ease';
     panel.style.transform='scale(1,1)';
-    panel.style.borderRadius='0px';
     panel.style.opacity='1';
   });
-  setTimeout(()=>{ document.getElementById('home').style.display='none'; }, 400);
+  setTimeout(()=>{ panel.style.willChange='auto'; }, 320);
   const meta = MODULE_META[id];
   setFavicon(meta.emoji, meta.color);
   document.title = meta.title+' · LifeOS';
@@ -931,12 +930,16 @@ function closeModule(id){
   const panel = document.getElementById('panel-'+id);
   document.getElementById('home').style.display='block';
   const origin = PANEL_ORIGINS[id] || {cx:window.innerWidth/2, cy:window.innerHeight/2, sx:0.15, sy:0.08};
+  panel.style.willChange='transform, opacity';
   panel.style.transformOrigin = origin.cx+'px '+origin.cy+'px';
-  panel.style.transition='transform .35s cubic-bezier(.4,0,.2,1), border-radius .35s ease, opacity .28s ease';
+  panel.style.transition='transform .24s cubic-bezier(.4,0,.2,1), opacity .2s ease';
   panel.style.transform = 'scale('+origin.sx+','+origin.sy+')';
-  panel.style.borderRadius='50%';
   panel.style.opacity='0';
-  setTimeout(()=>{ panel.classList.remove('active'); document.body.classList.remove('panel-open'); }, 350);
+  setTimeout(()=>{
+    panel.classList.remove('active');
+    document.body.classList.remove('panel-open');
+    panel.style.willChange='auto';
+  }, 240);
   resetFavicon();
   renderAll();
 }
@@ -1716,11 +1719,17 @@ function renderConfig(){
     <div class="settings-group">
       <h3>🆕 Atualizações</h3>
       <div class="settings-row">
-        <div><div class="lbl">Versão atual</div><div class="desc">v${esc(DB.settings.version||'3.0.1 (alfa)')}</div></div>
+        <div><div class="lbl">Versão atual</div><div class="desc">v${esc(DB.settings.version||'3.2 (alfa)')}</div></div>
       </div>
       <button class="history-toggle" onclick="toggleChangelog()">📜 Histórico de atualizações</button>
       <div id="changelog-box" style="display:none;">
       <div class="form-card" style="margin-top:8px;">
+        <div class="item-meta" style="font-weight:700; margin-bottom:6px;">O que mudou na v3.2 (otimização da animação):</div>
+        <ul style="margin:0 0 12px; padding-left:18px; font-size:12.5px; color:var(--text-soft); line-height:1.7;">
+          <li>Animação de abrir/fechar módulos reconstruída pra usar só efeitos leves (GPU)</li>
+          <li>Removido o "arredondar cantinho" durante a animação — forçava redesenho a cada quadro, era o principal causador de travada</li>
+          <li>A Home some assim que você toca num módulo, em vez de continuar renderizada por trás</li>
+        </ul>
         <div class="item-meta" style="font-weight:700; margin-bottom:6px;">O que mudou na v3.0.1 (mega otimização):</div>
         <ul style="margin:0 0 12px; padding-left:18px; font-size:12.5px; color:var(--text-soft); line-height:1.7;">
           <li>Fundo animado (aurora) reconstruído pra usar aceleração de GPU — muito mais leve</li>
