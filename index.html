@@ -386,7 +386,28 @@ body.eco-mode .module-card, body.eco-mode .back-btn, body.eco-mode .icon-btn, bo
   box-shadow:0 8px 28px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05) !important;
 }
 
-/* Pets removidos temporariamente nesta versão de otimização (voltam depois, corrigidos) */
+/* Pet (Alfa) — só o Steve. Sem animação contínua: tudo dispara só quando você toca ou cria algo, e some sozinho. */
+#pets-layer{ position:fixed; inset:0; pointer-events:none; z-index:310; }
+.pixel-pet{
+  position:absolute; pointer-events:auto; cursor:grab; touch-action:none;
+}
+.pixel-pet:active{ cursor:grabbing; }
+.pixel-pet-sprite{ position:absolute; top:0; left:0; pointer-events:none; image-rendering:pixelated; }
+.pixel-pet.jumping{ animation:petJump .4s ease; }
+@keyframes petJump{
+  0%{ transform:translateY(0); }
+  40%{ transform:translateY(-14px); }
+  100%{ transform:translateY(0); }
+}
+.pet-react-overlay{ position:absolute; top:0; left:0; pointer-events:none; image-rendering:pixelated; display:none; }
+.pet-react-overlay.show{ display:block; }
+.pet-heart{ position:absolute; top:-6px; font-size:14px; pointer-events:none; animation:heartPop 0.8s ease forwards; }
+@keyframes heartPop{
+  0%{ opacity:0; transform:translateY(0) scale(0.5); }
+  25%{ opacity:1; transform:translateY(-8px) scale(1.05); }
+  100%{ opacity:0; transform:translateY(-26px) scale(1); }
+}
+
 .item-card, .form-card, .settings-row, .panel-header, #bottom-nav, .ai-msg.bot, .ai-input-bar input{
   background:var(--bg-card);
   border:1px solid var(--border);
@@ -522,6 +543,8 @@ body.eco-mode .module-card, body.eco-mode .back-btn, body.eco-mode .icon-btn, bo
     </div>
     <button class="btn-primary" style="margin-top:20px; background:var(--amarelo); color:var(--verde-escuro);" onclick="closeWhatsNew()">Entendi!</button>
   </div>
+
+  <div id="pets-layer"></div>
 
   <!-- LOCK SCREEN -->
   <div id="lock">
@@ -735,9 +758,9 @@ if(!DB.streak){ DB.streak={dates:[], current:0}; }
 if(!DB.assuntos){ DB.assuntos=[]; }
 if(!DB.achievements){ DB.achievements={unlocked:[], equipped:null}; }
 if(!DB.settings.widgetSizes){ DB.settings.widgetSizes={}; }
-if(!DB.settings.pets){ DB.settings.pets={steve:false, gato:false, cachorro:false}; }
+if(!DB.settings.pets){ DB.settings.pets={steve:false}; }
 if(!DB.settings.petPositions){ DB.settings.petPositions={}; }
-DB.settings.version='3.2 (alfa)';
+DB.settings.version='3.3 (alfa)';
 if(DB._isFreshInstall){ DB.settings.lastSeenVersion = DB.settings.version; delete DB._isFreshInstall; }
 saveDB();
 
@@ -818,8 +841,9 @@ async function pinPress(k){
   }
 }
 const CURRENT_VERSION_NOTES = [
-  '⚡ Animação de abrir/fechar módulos totalmente reconstruída — bem mais leve e rápida',
-  'Removido o efeito que fazia o cantinho arredondar durante a animação (era o que mais pesava)'
+  '📺 Steve voltou! Agora ele é o único pet (fase Alfa), ative em Configurações',
+  'Desenho extraído direto da sua imagem de referência, bem mais fiel',
+  'Sem animações contínuas — só reage quando você toca nele ou cria algo novo, pra não pesar'
 ];
 function unlockApp(){
   document.getElementById('lock').style.display='none';
@@ -1710,6 +1734,14 @@ function renderConfig(){
       <div class="item-desc" style="margin-top:6px;">Se o botão não aparecer, seu navegador já deve ter uma opção "Adicionar à tela inicial" no menu (⋮).</div>
     </div>
     <div class="settings-group">
+      <h3>📺 Pet (Alfa)</h3>
+      <div class="settings-row">
+        <div><div class="lbl">Steve</div><div class="desc">Recurso em fase alfa — pode ter algum bug</div></div>
+        <div class="switch ${DB.settings.pets.steve?'on':''}" onclick="togglePet('steve')"><div class="knob"></div></div>
+      </div>
+      <div class="item-desc" style="margin-top:6px;">Arraste ele pra qualquer lugar da Home. Toque nele pra ver ele pular, e ele reage sempre que você cria algo novo.</div>
+    </div>
+    <div class="settings-group">
       <h3>🔑 Autenticação</h3>
       <div class="settings-row">
         <div><div class="lbl">Bloquear agora</div><div class="desc">Voltar para a tela de PIN</div></div>
@@ -1719,11 +1751,18 @@ function renderConfig(){
     <div class="settings-group">
       <h3>🆕 Atualizações</h3>
       <div class="settings-row">
-        <div><div class="lbl">Versão atual</div><div class="desc">v${esc(DB.settings.version||'3.2 (alfa)')}</div></div>
+        <div><div class="lbl">Versão atual</div><div class="desc">v${esc(DB.settings.version||'3.3 (alfa)')}</div></div>
       </div>
       <button class="history-toggle" onclick="toggleChangelog()">📜 Histórico de atualizações</button>
       <div id="changelog-box" style="display:none;">
       <div class="form-card" style="margin-top:8px;">
+        <div class="item-meta" style="font-weight:700; margin-bottom:6px;">O que mudou na v3.3 (Steve — fase Alfa):</div>
+        <ul style="margin:0 0 12px; padding-left:18px; font-size:12.5px; color:var(--text-soft); line-height:1.7;">
+          <li>Pet Steve de volta, agora como o único pet, sem restrição de exclusividade</li>
+          <li>Desenho extraído da imagem de referência (cores e formato bem mais fiéis)</li>
+          <li>Zero animação contínua — ele só se mexe quando você toca nele ou cria algo novo, e para sozinho logo em seguida</li>
+          <li>Marcado como recurso Alfa nas Configurações (pode ter algum bug ainda)</li>
+        </ul>
         <div class="item-meta" style="font-weight:700; margin-bottom:6px;">O que mudou na v3.2 (otimização da animação):</div>
         <ul style="margin:0 0 12px; padding-left:18px; font-size:12.5px; color:var(--text-soft); line-height:1.7;">
           <li>Animação de abrir/fechar módulos reconstruída pra usar só efeitos leves (GPU)</li>
@@ -2056,8 +2095,119 @@ function answerAI(q){
 /* ---------------- INITIAL RENDER ---------------- */
 /* ---------------- PETS: removidos temporariamente nesta versão de otimização ---------------- */
 /* (voltam numa próxima atualização, corrigidos — estas funções ficam como stubs vazios pra não quebrar nada) */
-function renderPets(){}
-function petReact(){}
+/* ---------------- PET (Alfa) — só o Steve, extraído da imagem de referência ---------------- */
+function rectPx(x,y,w,h,c){ const out=[]; for(let yy=y;yy<y+h;yy++) for(let xx=x;xx<x+w;xx++) out.push([xx,yy,c]); return out; }
+function pixelBoxShadow(pixels, size){ return pixels.map(([x,y,c])=> (x*size)+'px '+(y*size)+'px 0 '+c).join(','); }
+function trianglePx(x0,y0,size,color){
+  const out=[]; const half=Math.floor(size/2);
+  for(let i=0;i<=half;i++){
+    out.push(...rectPx(x0, y0+half-i, i+1, 1, color));
+    if(i>0) out.push(...rectPx(x0, y0+half+i, i+1, 1, color));
+  }
+  return out;
+}
+
+const STEVE_W = 30, STEVE_H = 23, STEVE_SIZE = 3;
+const STEVE_BODY = [[4,0,'#e4e4ea'],[5,0,'#726597'],[6,0,'#e4e4ea'],[16,0,'#e4e4ea'],[17,0,'#726597'],[18,0,'#e4e4ea'],[4,1,'#726597'],[5,1,'#b0a7cc'],[6,1,'#3d2a6d'],[7,1,'#e4e4ea'],[15,1,'#b0a7cc'],[16,1,'#726597'],[17,1,'#726597'],[18,1,'#726597'],[3,2,'#b0a7cc'],[4,2,'#726597'],[5,2,'#726597'],[6,2,'#726597'],[7,2,'#3d2a6d'],[8,2,'#e4e4ea'],[14,2,'#b0a7cc'],[15,2,'#726597'],[16,2,'#726597'],[17,2,'#b0a7cc'],[18,2,'#3d2a6d'],[3,3,'#b0a7cc'],[4,3,'#726597'],[5,3,'#b0a7cc'],[6,3,'#726597'],[7,3,'#726597'],[8,3,'#3d2a6d'],[13,3,'#e4e4ea'],[14,3,'#726597'],[15,3,'#726597'],[16,3,'#b0a7cc'],[17,3,'#726597'],[18,3,'#3d2a6d'],[19,3,'#e4e4ea'],[3,4,'#726597'],[4,4,'#726597'],[5,4,'#e4e4ea'],[6,4,'#b0a7cc'],[7,4,'#726597'],[8,4,'#3d2a6d'],[9,4,'#b0a7cc'],[13,4,'#b0a7cc'],[14,4,'#726597'],[15,4,'#726597'],[16,4,'#e4e4ea'],[17,4,'#726597'],[18,4,'#726597'],[19,4,'#726597'],[3,5,'#726597'],[4,5,'#726597'],[5,5,'#e4e4ea'],[6,5,'#b0a7cc'],[7,5,'#726597'],[8,5,'#726597'],[9,5,'#726597'],[10,5,'#e4e4ea'],[11,5,'#e4e4ea'],[12,5,'#e4e4ea'],[13,5,'#726597'],[14,5,'#726597'],[15,5,'#b0a7cc'],[16,5,'#e4e4ea'],[17,5,'#726597'],[18,5,'#726597'],[19,5,'#726597'],[2,6,'#b0a7cc'],[3,6,'#3d2a6d'],[4,6,'#3d2a6d'],[5,6,'#726597'],[6,6,'#3d2a6d'],[7,6,'#3d2a6d'],[8,6,'#3d2a6d'],[9,6,'#3d2a6d'],[10,6,'#3d2a6d'],[11,6,'#3d2a6d'],[12,6,'#3d2a6d'],[13,6,'#3d2a6d'],[14,6,'#3d2a6d'],[15,6,'#726597'],[16,6,'#726597'],[17,6,'#726597'],[18,6,'#726597'],[19,6,'#726597'],[2,7,'#3d2a6d'],[3,7,'#3d2a6d'],[4,7,'#3d2a6d'],[5,7,'#3d2a6d'],[6,7,'#3d2a6d'],[7,7,'#3d2a6d'],[8,7,'#3d2a6d'],[9,7,'#3d2a6d'],[10,7,'#3d2a6d'],[11,7,'#3d2a6d'],[12,7,'#3d2a6d'],[13,7,'#3d2a6d'],[14,7,'#3d2a6d'],[15,7,'#726597'],[16,7,'#3d2a6d'],[17,7,'#3d2a6d'],[18,7,'#726597'],[19,7,'#3d2a6d'],[20,7,'#e4e4ea'],[2,8,'#3d2a6d'],[3,8,'#3d2a6d'],[4,8,'#3d2a6d'],[5,8,'#726597'],[6,8,'#726597'],[7,8,'#b0a7cc'],[8,8,'#726597'],[9,8,'#726597'],[10,8,'#726597'],[11,8,'#726597'],[12,8,'#726597'],[13,8,'#726597'],[14,8,'#3d2a6d'],[15,8,'#726597'],[16,8,'#3d2a6d'],[17,8,'#1e1e23'],[18,8,'#726597'],[19,8,'#726597'],[20,8,'#726597'],[1,9,'#e4e4ea'],[2,9,'#3d2a6d'],[3,9,'#3d2a6d'],[4,9,'#b0a7cc'],[5,9,'#e4e4ea'],[6,9,'#e4e4ea'],[7,9,'#e4e4ea'],[8,9,'#e4e4ea'],[9,9,'#e4e4ea'],[10,9,'#e4e4ea'],[11,9,'#e4e4ea'],[12,9,'#e4e4ea'],[13,9,'#e4e4ea'],[14,9,'#726597'],[15,9,'#726597'],[16,9,'#3d2a6d'],[17,9,'#1e1e23'],[18,9,'#726597'],[19,9,'#726597'],[20,9,'#3d2a6d'],[1,10,'#b0a7cc'],[2,10,'#3d2a6d'],[3,10,'#3d2a6d'],[4,10,'#e4e4ea'],[5,10,'#e4e4ea'],[6,10,'#b0a7cc'],[7,10,'#726597'],[8,10,'#e4e4ea'],[9,10,'#e4e4ea'],[10,10,'#b0a7cc'],[11,10,'#726597'],[12,10,'#e4e4ea'],[13,10,'#e4e4ea'],[14,10,'#726597'],[15,10,'#726597'],[16,10,'#3d2a6d'],[17,10,'#1e1e23'],[18,10,'#3d2a6d'],[19,10,'#726597'],[20,10,'#3d2a6d'],[21,10,'#e4e4ea'],[1,11,'#726597'],[2,11,'#726597'],[3,11,'#3d2a6d'],[4,11,'#e4e4ea'],[5,11,'#e4e4ea'],[6,11,'#726597'],[7,11,'#726597'],[8,11,'#e4e4ea'],[9,11,'#e4e4ea'],[10,11,'#726597'],[11,11,'#726597'],[12,11,'#b0a7cc'],[13,11,'#e4e4ea'],[14,11,'#726597'],[15,11,'#726597'],[16,11,'#3d2a6d'],[17,11,'#1e1e23'],[18,11,'#b0a7cc'],[19,11,'#726597'],[20,11,'#726597'],[21,11,'#726597'],[1,12,'#726597'],[2,12,'#3d2a6d'],[3,12,'#726597'],[4,12,'#e4e4ea'],[5,12,'#e4e4ea'],[6,12,'#726597'],[7,12,'#726597'],[8,12,'#e4e4ea'],[9,12,'#e4e4ea'],[10,12,'#726597'],[11,12,'#726597'],[12,12,'#b0a7cc'],[13,12,'#e4e4ea'],[14,12,'#726597'],[15,12,'#726597'],[16,12,'#3d2a6d'],[17,12,'#3d2a6d'],[18,12,'#b0a7cc'],[19,12,'#726597'],[20,12,'#726597'],[21,12,'#726597'],[22,12,'#b0a7cc'],[0,13,'#b0a7cc'],[1,13,'#3d2a6d'],[2,13,'#3d2a6d'],[3,13,'#726597'],[4,13,'#e4e4ea'],[5,13,'#e4e4ea'],[6,13,'#726597'],[7,13,'#726597'],[8,13,'#e4e4ea'],[9,13,'#e4e4ea'],[10,13,'#726597'],[11,13,'#726597'],[12,13,'#b0a7cc'],[13,13,'#e4e4ea'],[14,13,'#726597'],[15,13,'#726597'],[16,13,'#3d2a6d'],[17,13,'#3d2a6d'],[18,13,'#b0a7cc'],[19,13,'#726597'],[20,13,'#726597'],[21,13,'#726597'],[22,13,'#b0a7cc'],[0,14,'#726597'],[1,14,'#3d2a6d'],[2,14,'#3d2a6d'],[3,14,'#726597'],[4,14,'#e4e4ea'],[5,14,'#e4e4ea'],[6,14,'#726597'],[7,14,'#3d2a6d'],[8,14,'#e4e4ea'],[9,14,'#e4e4ea'],[10,14,'#726597'],[11,14,'#3d2a6d'],[12,14,'#b0a7cc'],[13,14,'#e4e4ea'],[14,14,'#726597'],[15,14,'#726597'],[16,14,'#3d2a6d'],[17,14,'#3d2a6d'],[18,14,'#726597'],[19,14,'#726597'],[20,14,'#726597'],[21,14,'#726597'],[22,14,'#b0a7cc'],[0,15,'#b0a7cc'],[1,15,'#3d2a6d'],[2,15,'#3d2a6d'],[3,15,'#726597'],[4,15,'#e4e4ea'],[5,15,'#e4e4ea'],[6,15,'#e4e4ea'],[7,15,'#e4e4ea'],[8,15,'#e4e4ea'],[9,15,'#e4e4ea'],[10,15,'#e4e4ea'],[11,15,'#e4e4ea'],[12,15,'#e4e4ea'],[13,15,'#b0a7cc'],[14,15,'#726597'],[15,15,'#3d2a6d'],[16,15,'#1e1e23'],[17,15,'#3d2a6d'],[18,15,'#726597'],[19,15,'#726597'],[20,15,'#726597'],[21,15,'#726597'],[22,15,'#b0a7cc'],[0,16,'#b0a7cc'],[1,16,'#3d2a6d'],[2,16,'#3d2a6d'],[3,16,'#726597'],[4,16,'#e4e4ea'],[5,16,'#e4e4ea'],[6,16,'#e4e4ea'],[7,16,'#b0a7cc'],[8,16,'#b0a7cc'],[9,16,'#b0a7cc'],[10,16,'#b0a7cc'],[11,16,'#b0a7cc'],[12,16,'#e4e4ea'],[13,16,'#b0a7cc'],[14,16,'#726597'],[15,16,'#3d2a6d'],[16,16,'#1e1e23'],[17,16,'#3d2a6d'],[18,16,'#3d2a6d'],[19,16,'#726597'],[20,16,'#726597'],[21,16,'#3d2a6d'],[22,16,'#b0a7cc'],[23,16,'#e4e4ea'],[1,17,'#3d2a6d'],[2,17,'#3d2a6d'],[3,17,'#b0a7cc'],[4,17,'#e4e4ea'],[5,17,'#e4e4ea'],[6,17,'#e4e4ea'],[7,17,'#b0a7cc'],[9,17,'#b0a7cc'],[10,17,'#726597'],[12,17,'#726597'],[13,17,'#726597'],[14,17,'#3d2a6d'],[15,17,'#3d2a6d'],[16,17,'#1e1e23'],[17,17,'#1e1e23'],[18,17,'#726597'],[19,17,'#726597'],[20,17,'#726597'],[21,17,'#1e1e23'],[22,17,'#3d2a6d'],[23,17,'#1e1e23'],[24,17,'#726597'],[25,17,'#e4e4ea'],[1,18,'#3d2a6d'],[2,18,'#3d2a6d'],[3,18,'#726597'],[4,18,'#726597'],[5,18,'#726597'],[6,18,'#726597'],[7,18,'#726597'],[8,18,'#726597'],[11,18,'#726597'],[12,18,'#726597'],[13,18,'#726597'],[14,18,'#3d2a6d'],[15,18,'#3d2a6d'],[16,18,'#1e1e23'],[17,18,'#1e1e23'],[18,18,'#1e1e23'],[19,18,'#1e1e23'],[20,18,'#3d2a6d'],[21,18,'#e4e4ea'],[23,18,'#b0a7cc'],[24,18,'#3d2a6d'],[25,18,'#3d2a6d'],[26,18,'#726597'],[27,18,'#726597'],[28,18,'#e4e4ea'],[1,19,'#b0a7cc'],[2,19,'#3d2a6d'],[3,19,'#3d2a6d'],[4,19,'#726597'],[5,19,'#3d2a6d'],[6,19,'#3d2a6d'],[7,19,'#3d2a6d'],[8,19,'#3d2a6d'],[9,19,'#3d2a6d'],[10,19,'#3d2a6d'],[11,19,'#3d2a6d'],[12,19,'#3d2a6d'],[13,19,'#3d2a6d'],[14,19,'#3d2a6d'],[15,19,'#3d2a6d'],[16,19,'#1e1e23'],[17,19,'#1e1e23'],[18,19,'#1e1e23'],[19,19,'#1e1e23'],[20,19,'#b0a7cc'],[25,19,'#726597'],[26,19,'#e4e4ea'],[27,19,'#e4e4ea'],[28,19,'#3d2a6d'],[2,20,'#b0a7cc'],[3,20,'#b0a7cc'],[4,20,'#3d2a6d'],[5,20,'#1e1e23'],[6,20,'#1e1e23'],[7,20,'#1e1e23'],[8,20,'#1e1e23'],[9,20,'#3d2a6d'],[10,20,'#3d2a6d'],[11,20,'#1e1e23'],[12,20,'#1e1e23'],[13,20,'#1e1e23'],[14,20,'#1e1e23'],[15,20,'#1e1e23'],[16,20,'#1e1e23'],[17,20,'#1e1e23'],[18,20,'#1e1e23'],[19,20,'#e4e4ea'],[25,20,'#726597'],[26,20,'#b0a7cc'],[27,20,'#726597'],[28,20,'#3d2a6d'],[29,20,'#726597'],[5,21,'#e4e4ea'],[6,21,'#726597'],[7,21,'#b0a7cc'],[8,21,'#726597'],[11,21,'#b0a7cc'],[12,21,'#b0a7cc'],[13,21,'#b0a7cc'],[14,21,'#726597'],[15,21,'#e4e4ea'],[16,21,'#726597'],[17,21,'#b0a7cc'],[18,21,'#726597'],[26,21,'#726597'],[27,21,'#726597'],[28,21,'#726597'],[29,21,'#e4e4ea'],[6,22,'#b0a7cc'],[7,22,'#726597'],[8,22,'#e4e4ea'],[12,22,'#b0a7cc'],[13,22,'#b0a7cc'],[14,22,'#e4e4ea'],[16,22,'#b0a7cc'],[17,22,'#726597'],[18,22,'#e4e4ea'],[28,22,'#e4e4ea'],[8,17,'#1e1e23'],[11,17,'#1e1e23'],[9,18,'#1e1e23'],[10,18,'#1e1e23']];
+// setinhas ⏩ que aparecem por cima da tela quando algo novo é criado (área da tela: x4-21, y7-18)
+const STEVE_REACT = [
+  ...trianglePx(6, 8, 7, '#3d2a6d'),
+  ...trianglePx(12, 8, 7, '#3d2a6d')
+];
+
+function renderPets(){
+  const layer=document.getElementById('pets-layer');
+  if(!layer) return;
+  layer.innerHTML='';
+  if(!(DB.settings.pets && DB.settings.pets.steve)) return;
+  const pos = (DB.settings.petPositions && DB.settings.petPositions.steve) || {x:24, y:160};
+  const W = STEVE_W*STEVE_SIZE, H = STEVE_H*STEVE_SIZE;
+  const el=document.createElement('div');
+  el.className='pixel-pet';
+  el.id='pet-steve';
+  el.style.left=pos.x+'px';
+  el.style.top=pos.y+'px';
+  el.style.width=W+'px';
+  el.style.height=H+'px';
+
+  const sprite=document.createElement('div');
+  sprite.className='pixel-pet-sprite';
+  sprite.style.width=STEVE_SIZE+'px';
+  sprite.style.height=STEVE_SIZE+'px';
+  sprite.style.boxShadow=pixelBoxShadow(STEVE_BODY, STEVE_SIZE);
+  el.appendChild(sprite);
+
+  const overlay=document.createElement('div');
+  overlay.className='pet-react-overlay';
+  overlay.id='steve-react-overlay';
+  overlay.style.width=STEVE_SIZE+'px';
+  overlay.style.height=STEVE_SIZE+'px';
+  overlay.style.boxShadow=pixelBoxShadow(STEVE_REACT, STEVE_SIZE);
+  el.appendChild(overlay);
+
+  attachPetDrag(el, 'steve');
+  layer.appendChild(el);
+}
+function attachPetDrag(el, id){
+  let dragging=false, offX=0, offY=0, moved=false, startX=0, startY=0;
+  el.addEventListener('pointerdown', (e)=>{
+    dragging=true; moved=false;
+    try{ el.setPointerCapture(e.pointerId); }catch(err){}
+    const rect=el.getBoundingClientRect();
+    offX = e.clientX-rect.left; offY = e.clientY-rect.top;
+    startX = e.clientX; startY = e.clientY;
+  });
+  el.addEventListener('pointermove', (e)=>{
+    if(!dragging) return;
+    if(Math.abs(e.clientX-startX)>4 || Math.abs(e.clientY-startY)>4) moved=true;
+    el.style.left=(e.clientX-offX)+'px'; el.style.top=(e.clientY-offY)+'px';
+  });
+  const endDrag=()=>{
+    if(!dragging) return;
+    dragging=false;
+    if(moved){
+      DB.settings.petPositions = DB.settings.petPositions || {};
+      DB.settings.petPositions[id] = {x: parseFloat(el.style.left)||0, y: parseFloat(el.style.top)||0};
+      saveDB();
+    } else {
+      petTap();
+    }
+  };
+  el.addEventListener('pointerup', endDrag);
+  el.addEventListener('pointercancel', endDrag);
+}
+function petTap(){
+  const el=document.getElementById('pet-steve');
+  if(!el) return;
+  el.classList.remove('jumping'); void el.offsetWidth; el.classList.add('jumping');
+  const heartCount = Math.random()<0.5 ? 1 : 2;
+  for(let i=0;i<heartCount;i++){
+    const heart=document.createElement('div');
+    heart.className='pet-heart';
+    heart.textContent='❤️';
+    heart.style.left=(34+i*14+Math.random()*8)+'px';
+    heart.style.animationDelay=(i*0.12)+'s';
+    el.appendChild(heart);
+    setTimeout(()=>heart.remove(), 900);
+  }
+}
+function petReact(){
+  if(!(DB.settings.pets && DB.settings.pets.steve)) return;
+  const el=document.getElementById('pet-steve');
+  if(!el) return;
+  el.classList.remove('jumping'); void el.offsetWidth; el.classList.add('jumping');
+  const overlay=document.getElementById('steve-react-overlay');
+  if(overlay){
+    overlay.classList.add('show');
+    clearTimeout(overlay._t);
+    overlay._t=setTimeout(()=>overlay.classList.remove('show'), 700);
+  }
+}
+function togglePet(id){
+  DB.settings.pets = DB.settings.pets || {};
+  DB.settings.pets[id] = !DB.settings.pets[id];
+  saveDB(); renderPets(); renderConfig();
+}
 
 /* ---------------- PWA: service worker + instalação ---------------- */
 if('serviceWorker' in navigator){
