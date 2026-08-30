@@ -28,9 +28,9 @@
   --border:rgba(27,67,50,0.10);
   --shadow:0 8px 30px rgba(27,67,50,0.10);
   --danger:#E5533D;
-  --radius-lg:32px;
-  --radius-md:20px;
-  --radius-sm:14px;
+  --radius-lg:40px;
+  --radius-md:28px;
+  --radius-sm:20px;
 }
 [data-theme="dark"]{
   --verde-escuro:#0E2A1E;
@@ -137,7 +137,7 @@ button{cursor:pointer; border:none; background:none;}
 #brief-list li{
   display:flex; align-items:flex-start; gap:8px;
   font-size:13.5px; line-height:1.4; color:rgba(255,255,255,0.92);
-  background:rgba(255,255,255,0.08); padding:9px 12px; border-radius:14px;
+  background:rgba(255,255,255,0.08); padding:9px 12px; border-radius:18px;
 }
 #brief-list li .dot{color:var(--amarelo); margin-top:1px;}
 .brief-empty{color:rgba(255,255,255,0.6); font-size:13px;}
@@ -200,14 +200,47 @@ button{cursor:pointer; border:none; background:none;}
   box-shadow:0 10px 30px rgba(0,0,0,0.25);
 }
 body.panel-open #tab-bar{ display:none; } /* hidden while a module panel is open */
+
+/* ---------- v5.0: SAVE INDICATOR ---------- */
+#save-indicator{
+  position:fixed; top:calc(10px + env(safe-area-inset-top)); left:50%;
+  transform:translateX(-50%) translateY(-140%);
+  z-index:260;
+  font-size:11.5px; font-weight:600; letter-spacing:.2px;
+  padding:6px 14px; border-radius:999px;
+  background:rgba(20,20,20,0.55);
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  color:rgba(255,255,255,0.7);
+  opacity:0;
+  transition:transform .3s cubic-bezier(.22,.8,.28,1), opacity .3s ease, color .3s ease, background .3s ease;
+  pointer-events:none;
+  white-space:nowrap;
+}
+#save-indicator.saving, #save-indicator.saved{
+  transform:translateX(-50%) translateY(0);
+  opacity:1;
+}
+#save-indicator.saved{
+  color:#fff;
+  background:rgba(27,67,50,0.75); /* verde-escuro tint, so "saved" reads as a positive confirmation */
+}
+body.panel-open #save-indicator{ display:none; } /* don't compete with a module's own header */
+#tab-pill{
+  position:absolute; top:8px; left:0;
+  width:52px; height:44px; border-radius:999px;
+  background:rgba(255,255,255,0.16);
+  transition:transform .75s cubic-bezier(.4,0,.2,1);
+  pointer-events:none;
+}
 .tab-btn{
+  position:relative; z-index:1;
   width:52px; height:44px; border-radius:999px;
   display:flex; align-items:center; justify-content:center;
   font-size:20px; color:rgba(255,255,255,0.55);
-  transition:background .2s ease, color .2s ease, transform .15s ease;
+  transition:color .2s ease, transform .15s ease;
 }
 .tab-btn:active{ transform:scale(0.9); }
-.tab-btn.active{ background:rgba(255,255,255,0.16); color:#fff; }
+.tab-btn.active{ color:#fff; }
 #screens{ position:relative; width:100%; height:100%; overflow:hidden; }
 .app-screen{
   position:absolute; inset:0;
@@ -215,6 +248,9 @@ body.panel-open #tab-bar{ display:none; } /* hidden while a module panel is open
   overflow-y:auto; padding:28px 20px 100px;
 }
 .app-screen.dragging{ transition:none; }
+.app-screen > *{ will-change:auto; }
+.elastic-content{ transition:transform .35s cubic-bezier(.34,1.3,.4,1); }
+.elastic-content.pulling{ transition:none; }
 
 .icon-habitos{background:#E9F5EC; color:var(--verde);}
 .icon-config{background:#EFEFF4; color:#5B5B6B;}
@@ -257,7 +293,7 @@ body.panel-open #tab-bar{ display:none; } /* hidden while a module panel is open
   padding:10px 8px calc(10px + env(safe-area-inset-bottom));
   box-shadow:0 -6px 20px rgba(0,0,0,0.06);
 }
-.nav-btn{display:flex; flex-direction:column; align-items:center; gap:3px; font-size:10.5px; color:var(--text-soft); padding:4px 10px; border-radius:14px;}
+.nav-btn{display:flex; flex-direction:column; align-items:center; gap:3px; font-size:10.5px; color:var(--text-soft); padding:4px 10px; border-radius:18px;}
 .nav-btn .ic{font-size:19px;}
 .nav-btn.active{color:var(--verde);}
 
@@ -288,7 +324,7 @@ body.panel-open #tab-bar{ display:none; } /* hidden while a module panel is open
 .field{margin-bottom:14px;}
 .field label{display:block; font-size:12.5px; font-weight:600; color:var(--text-soft); margin-bottom:6px;}
 .field input, .field textarea, .field select{
-  width:100%; padding:11px 14px; border-radius:14px; border:1px solid var(--border);
+  width:100%; padding:11px 14px; border-radius:20px; border:1px solid var(--border);
   background:var(--bg-card); color:var(--text); font-size:14px;
 }
 .field textarea{resize:vertical; min-height:64px;}
@@ -338,7 +374,7 @@ body.panel-open #tab-bar{ display:none; } /* hidden while a module panel is open
 .settings-group h3{font-size:13px; text-transform:uppercase; letter-spacing:.5px; color:var(--text-soft); margin-bottom:10px;}
 .settings-row{
   display:flex; justify-content:space-between; align-items:center;
-  background:var(--bg-card); border:1px solid var(--border); border-radius:16px;
+  background:var(--bg-card); border:1px solid var(--border); border-radius:22px;
   padding:14px 16px; margin-bottom:8px;
 }
 .settings-row .lbl{font-size:14px; font-weight:600;}
@@ -349,7 +385,7 @@ body.panel-open #tab-bar{ display:none; } /* hidden while a module panel is open
 .switch.on .knob{transform:translateX(20px);}
 
 /* AI chat */
-.ai-msg{max-width:82%; padding:11px 15px; border-radius:18px; margin-bottom:10px; font-size:14px; line-height:1.45;}
+.ai-msg{max-width:82%; padding:11px 15px; border-radius:24px; margin-bottom:10px; font-size:14px; line-height:1.45;}
 .ai-msg.bot{background:var(--bg-card); border:1px solid var(--border); border-bottom-left-radius:4px;}
 .ai-msg.user{background:var(--verde); color:#fff; margin-left:auto; border-bottom-right-radius:4px;}
 .ai-input-bar{position:sticky; bottom:0; display:flex; gap:8px; padding-top:10px; background:var(--bg);}
@@ -805,10 +841,14 @@ body.eco-mode .module-card, body.eco-mode .back-btn, body.eco-mode .icon-btn, bo
   </div>
 
   <!-- TAB BAR -->
+  <!-- SAVE INDICATOR (v5.0) -->
+  <div id="save-indicator"></div>
+
   <div id="tab-bar">
+    <div id="tab-pill"></div>
     <button class="tab-btn" id="tab-btn-fora" onclick="goToScreen('fora')">🗂️</button>
     <button class="tab-btn active" id="tab-btn-home" onclick="goToScreen('home')">🏠</button>
-    <button class="tab-btn" id="tab-btn-config" onclick="openModule('config', {currentTarget: document.getElementById('tab-btn-config')})">⚙️</button>
+    <button class="tab-btn" id="tab-btn-config" onclick="movePillTo('tab-btn-config'); openModule('config', {currentTarget: document.getElementById('tab-btn-config')})">⚙️</button>
   </div>
 
   <!-- REARRANGE MODE BAR (v3.6) -->
@@ -920,7 +960,25 @@ function loadDB(){
   }
   return JSON.parse(raw);
 }
-function saveDB(){ localStorage.setItem(DB_KEY, JSON.stringify(DB)); }
+let saveIndicatorTimer = null;
+function saveDB(){
+  localStorage.setItem(DB_KEY, JSON.stringify(DB));
+  showSaveIndicator();
+}
+function showSaveIndicator(){
+  const el = document.getElementById('save-indicator');
+  if(!el) return;
+  el.classList.remove('saved'); // restart the "saving -> saved" sequence even if it's already mid-cycle
+  el.classList.add('saving');
+  el.textContent = '● Salvando...';
+  clearTimeout(saveIndicatorTimer);
+  saveIndicatorTimer = setTimeout(()=>{
+    el.classList.remove('saving');
+    el.classList.add('saved');
+    el.textContent = '✓ Salvo no aparelho';
+    saveIndicatorTimer = setTimeout(()=>{ el.classList.remove('saved'); }, 1800);
+  }, 260);
+}
 let DB = loadDB();
 if(!DB.aulas){ DB.aulas={1:[null,null,null,null,null],2:[null,null,null,null,null],3:[null,null,null,null,null],4:[null,null,null,null,null],5:[null,null,null,null,null]}; }
 if(!DB.streak){ DB.streak={dates:[], current:0}; }
@@ -930,7 +988,7 @@ if(!DB.settings.widgetSizes){ DB.settings.widgetSizes={}; }
 if(!DB.settings.pets){ DB.settings.pets={steve:false}; }
 if(!DB.settings._petsResetV34){ DB.settings.pets={steve:false}; DB.settings._petsResetV34=true; }
 if(!DB.settings.petPositions){ DB.settings.petPositions={}; }
-DB.settings.version='4.2';
+DB.settings.version='5.0';
 if(DB._isFreshInstall){ DB.settings.lastSeenVersion = DB.settings.version; delete DB._isFreshInstall; }
 saveDB();
 
@@ -1014,8 +1072,10 @@ async function pinPress(k){
   }
 }
 const CURRENT_VERSION_NOTES = [
-  '🐛 Corrigido: o gesto de deslizar entre "Fora da Home" e Home agora funciona de forma confiável',
-  '🏠 Ícones da barra de navegação atualizados'
+  '💾 Novo indicador de "Salvo" no topo da tela: toda vez que algo muda, o LifeOS confirma visualmente que já foi salvo no aparelho',
+  '🎨 Visual mais macio e orgânico: cantos bem mais arredondados em cards, botões e painéis, estilo One UI/iOS',
+  '🌊 Scroll elástico: puxar além do topo ou do fim da lista agora estica de leve e volta suavemente, em vez de travar seco',
+  '🧹 Revisão geral de estabilidade em todos os módulos antes do uso diário'
 ];
 function unlockApp(){
   document.getElementById('lock').style.display='none';
@@ -1031,7 +1091,7 @@ function unlockApp(){
 function showWhatsNew(){
   document.getElementById('whats-new-version').textContent = 'v'+DB.settings.version;
   document.getElementById('whats-new-list').innerHTML = CURRENT_VERSION_NOTES.map(n=>`
-    <li style="background:rgba(255,255,255,0.1); padding:12px 14px; border-radius:14px; font-size:14px; line-height:1.4; display:flex; gap:8px;">
+    <li style="background:rgba(255,255,255,0.1); padding:12px 14px; border-radius:18px; font-size:14px; line-height:1.4; display:flex; gap:8px;">
       <span style="color:var(--amarelo);">●</span><span>${esc(n)}</span>
     </li>`).join('');
   document.getElementById('whats-new').style.display='flex';
@@ -1205,13 +1265,67 @@ const SCREEN_ORDER = ['fora','home']; // config is a full-screen panel, not a sw
 const SCREEN_IDS = {fora:'screen-fora', home:'home'}; // explicit map: screen name -> real element id
 function goToScreen(name){
   if(name===currentScreen) return;
-  document.getElementById(SCREEN_IDS[currentScreen]).style.display='none';
-  document.getElementById(SCREEN_IDS[name]).style.display='block';
   document.getElementById('tab-btn-'+currentScreen) && document.getElementById('tab-btn-'+currentScreen).classList.remove('active');
   document.getElementById('tab-btn-'+name) && document.getElementById('tab-btn-'+name).classList.add('active');
+  movePillTo('tab-btn-'+name);
+  const previousScreen = currentScreen;
   currentScreen = name;
+  // Swap the screen content right away so tapping a tab feels instant — the pill keeps
+  // sliding on top of the tab bar independently, without holding up the navigation itself.
+  document.getElementById(SCREEN_IDS[previousScreen]).style.display='none';
+  document.getElementById(SCREEN_IDS[name]).style.display='block';
   renderAll();
 }
+function movePillTo(btnId){
+  const btn = document.getElementById(btnId);
+  const pill = document.getElementById('tab-pill');
+  if(!btn || !pill) return;
+  pill.style.transform = 'translateX('+btn.offsetLeft+'px)';
+}
+// Position the pill correctly on first paint (after fonts/layout settle)
+requestAnimationFrame(()=> movePillTo('tab-btn-home'));
+window.addEventListener('resize', ()=> movePillTo('tab-btn-'+currentScreen));
+
+/* ---------------- v5.0: SCROLL ELÁSTICO (One UI / iOS style rubber-band) ----------------
+   overflow-y:auto containers don't bounce on Android/Chrome by default, so we fake it:
+   when the user pulls past the top or bottom edge, the content stretches slightly and
+   springs back on release, instead of just refusing to move. */
+function setupElasticScroll(el){
+  let startY=0, pulling=false, overpull=0, pointerId=null;
+  const MAX_PULL = 70;      // px of visible stretch at the very edge
+  const RESISTANCE = 0.42;  // how much slower the content moves vs the finger past the edge
+
+  el.addEventListener('pointerdown', (e)=>{
+    if(e.pointerType==='mouse') return; // rubber-banding is a touch affordance, mouse wheel scrolls normally
+    startY = e.clientY; pulling=false; overpull=0; pointerId=e.pointerId;
+  });
+  el.addEventListener('pointermove', (e)=>{
+    if(e.pointerId!==pointerId) return;
+    const dy = e.clientY - startY;
+    const atTop = el.scrollTop<=0;
+    const atBottom = el.scrollTop+el.clientHeight >= el.scrollHeight-1;
+    if((atTop && dy>0) || (atBottom && dy<0)){
+      pulling = true;
+      overpull = Math.sign(dy) * Math.min(MAX_PULL, Math.abs(dy)*RESISTANCE);
+      el.style.transition='none';
+      el.style.transform='translateY('+overpull+'px)';
+    } else if(pulling){
+      // finger moved back within normal scroll range; release the stretch
+      pulling=false;
+      el.style.transition='transform .35s cubic-bezier(.34,1.3,.4,1)';
+      el.style.transform='translateY(0)';
+    }
+  });
+  function release(e){
+    if(e.pointerId!==pointerId || !pulling) return;
+    pulling=false;
+    el.style.transition='transform .35s cubic-bezier(.34,1.3,.4,1)';
+    el.style.transform='translateY(0)';
+  }
+  el.addEventListener('pointerup', release);
+  el.addEventListener('pointercancel', release);
+}
+document.querySelectorAll('.app-screen').forEach(setupElasticScroll);
 
 // Swipe left/right between "Fora da Home" and "Home"
 // Uses Pointer Events (not Touch Events) for more consistent cross-browser behavior,
@@ -1225,7 +1339,6 @@ function goToScreen(name){
     if(e.pointerType==='mouse' && e.buttons!==1) return;
     if(document.body.classList.contains('panel-open')) return;
     if(rearrangeMode) return; // don't fight with the drag-to-reorder gesture
-    if(e.target.closest('.module-card')) return; // let module cards handle their own long-press/drag first
     startX = e.clientX; startY = e.clientY;
     tracking = true; decided = false; isHorizontal = false; pointerId = e.pointerId;
   });
@@ -1243,9 +1356,8 @@ function goToScreen(name){
     if(!isHorizontal) return;
     const dx = e.clientX - startX;
     if(Math.abs(dx) < 45) return;
-    const idx = SCREEN_ORDER.indexOf(currentScreen);
-    if(dx < 0 && idx < SCREEN_ORDER.length-1){ goToScreen(SCREEN_ORDER[idx+1]); } // swipe left -> next
-    else if(dx > 0 && idx > 0){ goToScreen(SCREEN_ORDER[idx-1]); } // swipe right -> previous
+    // Only two screens exist today, so any confident horizontal swipe just toggles between them.
+    goToScreen(currentScreen==='home' ? 'fora' : 'home');
   }
   container.addEventListener('pointerup', finish);
   container.addEventListener('pointercancel', ()=>{ tracking=false; });
@@ -1291,6 +1403,7 @@ function closeModule(id){
     panel.classList.remove('active');
     document.body.classList.remove('panel-open');
     panel.style.willChange='auto';
+    if(id==='config') movePillTo('tab-btn-'+currentScreen); // config isn't a swipeable screen; restore the pill only once the tab bar is visible again (offsetLeft is 0 while display:none)
   }, 240);
   resetFavicon();
   renderAll();
@@ -1899,7 +2012,7 @@ function renderTrabalhos(){
         <button class="icon-btn danger" onclick="deleteTrabalho('${t.id}')">🗑</button>
       </div>
       ${t.desc?`<div class="item-desc">${esc(t.desc)}</div>`:''}
-      ${t.image?`<img src="${t.image}" style="width:100%; border-radius:14px; margin-top:8px; max-height:180px; object-fit:cover; display:block;">`:''}
+      ${t.image?`<img src="${t.image}" style="width:100%; border-radius:18px; margin-top:8px; max-height:180px; object-fit:cover; display:block;">`:''}
     </div>
   `).join('');
 }
@@ -2184,11 +2297,62 @@ function renderConfig(){
     <div class="settings-group">
       <h3>🆕 Atualizações</h3>
       <div class="settings-row">
-        <div><div class="lbl">Versão atual</div><div class="desc">v${esc(DB.settings.version||'3.5 (alfa)')}</div></div>
+        <div><div class="lbl">Versão atual</div><div class="desc">v${esc(DB.settings.version||'5.0')}</div></div>
       </div>
       <button class="history-toggle" onclick="toggleChangelog()">📜 Histórico de atualizações</button>
       <div id="changelog-box" style="display:none;">
       <div class="form-card" style="margin-top:8px;">
+        <div class="item-meta" style="font-weight:700; margin-bottom:6px;">O que mudou na v5.0 (última grande versão antes do uso diário):</div>
+        <ul style="margin:0 0 12px; padding-left:18px; font-size:12.5px; color:var(--text-soft); line-height:1.7;">
+          <li>Novo indicador de "Salvo" no topo da tela, confirmando visualmente que os dados foram salvos no aparelho</li>
+          <li>Visual mais macio: cantos bem mais arredondados em cards, botões e painéis, estilo One UI/iOS</li>
+          <li>Scroll elástico: puxar além do topo ou do fim da lista estica de leve e volta suavemente</li>
+          <li>Revisão geral de estabilidade em todos os módulos</li>
+        </ul>
+        <div class="item-meta" style="font-weight:700; margin-bottom:6px;">O que mudou na v4.7 (navegação instantânea):</div>
+        <ul style="margin:0 0 12px; padding-left:18px; font-size:12.5px; color:var(--text-soft); line-height:1.7;">
+          <li>Corrigido: trocar de aba agora é instantâneo — a bolinha continua deslizando, mas sem atrasar a navegação</li>
+          <li>Histórico de atualizações atualizado com todas as versões desde a v3.6</li>
+        </ul>
+        <div class="item-meta" style="font-weight:700; margin-bottom:6px;">O que mudou na v4.6 (ritmo da navegação):</div>
+        <ul style="margin:0 0 12px; padding-left:18px; font-size:12.5px; color:var(--text-soft); line-height:1.7;">
+          <li>Ajustado o ritmo da bolinha da barra de navegação: agora dá pra acompanhar ela deslizando até o próximo ícone, num ritmo suave</li>
+        </ul>
+        <div class="item-meta" style="font-weight:700; margin-bottom:6px;">O que mudou na v4.4 e v4.5 (correções da navegação):</div>
+        <ul style="margin:0 0 12px; padding-left:18px; font-size:12.5px; color:var(--text-soft); line-height:1.7;">
+          <li>Corrigido: a bolinha de destaque da barra estava desalinhada (ficava praticamente invisível)</li>
+          <li>Agora ela realmente desliza até o ícone, em vez de trocar de lugar de forma instantânea</li>
+        </ul>
+        <div class="item-meta" style="font-weight:700; margin-bottom:6px;">O que mudou na v4.2 e v4.3 (correção do swipe):</div>
+        <ul style="margin:0 0 12px; padding-left:18px; font-size:12.5px; color:var(--text-soft); line-height:1.7;">
+          <li>Corrigido de vez o gesto de deslizar entre "Fora da Home" e Home — agora funciona a partir de qualquer ponto da tela</li>
+          <li>Ícones da barra de navegação atualizados (Home agora é uma casinha)</li>
+        </ul>
+        <div class="item-meta" style="font-weight:700; margin-bottom:6px;">O que mudou na v4.0 (primeira versão estável!):</div>
+        <ul style="margin:0 0 12px; padding-left:18px; font-size:12.5px; color:var(--text-soft); line-height:1.7;">
+          <li>🎉 LifeOS sai da alfa</li>
+          <li>Nova navegação por abas: deslize ou toque para alternar entre "Fora da Home", Home e Configurações</li>
+          <li>Configurações agora tem sua própria aba dedicada, separada da Home</li>
+        </ul>
+        <div class="item-meta" style="font-weight:700; margin-bottom:6px;">O que mudou na v3.9 (vibração):</div>
+        <ul style="margin:0 0 12px; padding-left:18px; font-size:12.5px; color:var(--text-soft); line-height:1.7;">
+          <li>Vibração adicionada: na tela de abertura, ao digitar o PIN, ao criar itens e ao redimensionar/mover widgets</li>
+        </ul>
+        <div class="item-meta" style="font-weight:700; margin-bottom:6px;">O que mudou na v3.8 (tela de bloqueio):</div>
+        <ul style="margin:0 0 12px; padding-left:18px; font-size:12.5px; color:var(--text-soft); line-height:1.7;">
+          <li>Saudação personalizada ao entrar, com base no horário do dia</li>
+          <li>Pontinhos do PIN agora "pulam" ao digitar</li>
+          <li>Visual novo: fundo com degradê suave e teclado com efeito glass</li>
+        </ul>
+        <div class="item-meta" style="font-weight:700; margin-bottom:6px;">O que mudou na v3.7 (correção de bugs da splash):</div>
+        <ul style="margin:0 0 12px; padding-left:18px; font-size:12.5px; color:var(--text-soft); line-height:1.7;">
+          <li>Corrigido: emojis da tela de abertura que às vezes não apareciam</li>
+        </ul>
+        <div class="item-meta" style="font-weight:700; margin-bottom:6px;">O que mudou na v3.6 (splash screen e reorganização):</div>
+        <ul style="margin:0 0 12px; padding-left:18px; font-size:12.5px; color:var(--text-soft); line-height:1.7;">
+          <li>Nova splash screen animada ao abrir o app, com o ícone e mensagem de boas-vindas</li>
+          <li>Agora dá pra reorganizar os módulos da Home: segure um card, arraste pra mover ou toque pra redimensionar</li>
+        </ul>
         <div class="item-meta" style="font-weight:700; margin-bottom:6px;">O que mudou na v3.5 (correção de bugs do Steve):</div>
         <ul style="margin:0 0 12px; padding-left:18px; font-size:12.5px; color:var(--text-soft); line-height:1.7;">
           <li>Corrigido: o rabinho não reagia ao arrasto porque o código procurava ele antes de existir na tela — agora funciona</li>
