@@ -142,6 +142,36 @@ button{cursor:pointer; border:none; background:none;}
 .module-card .title{font-size:14.5px; font-weight:700;}
 .module-card .sub{font-size:11.5px; color:var(--text-soft);}
 
+/* ---------- v3.6: MODO REORGANIZAR (jiggle + drag) ---------- */
+@keyframes jiggle{
+  0%{transform:rotate(-1deg);}
+  50%{transform:rotate(1deg);}
+  100%{transform:rotate(-1deg);}
+}
+.module-grid.rearrange-mode .module-card{
+  animation:jiggle .26s ease-in-out infinite;
+  animation-delay:calc(var(--jiggle-delay, 0) * 1ms);
+}
+.module-grid.rearrange-mode .module-card.wide{ animation-name:jiggle; }
+.module-card.dragging{
+  animation:none !important; opacity:0.55; transform:scale(1.06) !important;
+  box-shadow:0 16px 40px rgba(0,0,0,0.25); z-index:50; position:relative;
+}
+.module-card.drop-target{ outline:2px dashed var(--verde-claro); outline-offset:2px; }
+#rearrange-bar{
+  position:fixed; left:0; right:0; bottom:0; z-index:400;
+  padding:14px 20px calc(18px + env(safe-area-inset-bottom));
+  background:var(--bg-card); border-top:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  transform:translateY(110%); transition:transform .3s cubic-bezier(.22,.85,.28,1);
+}
+#rearrange-bar.open{ transform:translateY(0); }
+#rearrange-bar span{ font-size:13px; color:var(--text-soft); }
+#rearrange-bar button{
+  background:var(--verde-escuro); color:#fff; font-weight:700; font-size:13.5px;
+  padding:10px 22px; border-radius:999px;
+}
+
 .icon-habitos{background:#E9F5EC; color:var(--verde);}
 .icon-config{background:#EFEFF4; color:#5B5B6B;}
 .icon-metas{background:#FFF6D9; color:var(--amarelo-escuro);}
@@ -524,6 +554,62 @@ body.eco-mode .module-card, body.eco-mode .back-btn, body.eco-mode .icon-btn, bo
 }
 #search-input.wiggle{ animation:jellyWiggle .3s ease; }
 #search-results{ margin-top:12px; }
+
+/* ---------- v3.6: SPLASH SCREEN ---------- */
+#splash{
+  position:fixed; inset:0; z-index:900;
+  background:linear-gradient(160deg,var(--verde-escuro), var(--verde));
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  overflow:hidden;
+}
+#splash-icon-wrap{
+  position:relative; width:96px; height:96px;
+  display:flex; align-items:center; justify-content:center;
+}
+#splash-icon{
+  width:96px; height:96px; border-radius:26px;
+  background:var(--amarelo);
+  display:flex; align-items:center; justify-content:center;
+  font-size:44px; box-shadow:0 14px 40px rgba(0,0,0,0.3);
+  animation:splashShake 0.32s ease-in-out infinite;
+}
+@keyframes splashShake{
+  0%{transform:rotate(0deg);}
+  25%{transform:rotate(-3deg);}
+  75%{transform:rotate(3deg);}
+  100%{transform:rotate(0deg);}
+}
+#splash-pop-layer{
+  position:absolute; left:50%; bottom:100%; width:0; height:0;
+  pointer-events:none;
+}
+.splash-pop{
+  position:absolute; left:0; top:0;
+  transform:translate(-50%,0);
+  opacity:0;
+  font-size:22px;
+  white-space:nowrap;
+  animation:splashPopUp 2.2s cubic-bezier(.34,1.2,.4,1) forwards;
+}
+.splash-pop.is-text{
+  font-family:'Sora',sans-serif; font-weight:800; font-size:16px; color:#fff;
+  letter-spacing:-0.2px; max-width:70vw; text-align:center; white-space:normal;
+}
+@keyframes splashPopUp{
+  0%{ opacity:0; transform:translate(-50%,0) scale(0.4); }
+  18%{ opacity:1; transform:translate(-50%, var(--pop-y)) scale(1.06); }
+  30%{ transform:translate(-50%, var(--pop-y)) scale(1); }
+  75%{ opacity:1; transform:translate(-50%, var(--pop-y)) scale(1); }
+  100%{ opacity:0; transform:translate(-50%,0) scale(0.5); }
+}
+#splash-progress{
+  margin-top:34px; width:120px; height:3px; border-radius:99px;
+  background:rgba(255,255,255,0.2); overflow:hidden;
+}
+#splash-progress-fill{
+  height:100%; width:0%; background:var(--amarelo); border-radius:99px;
+  transition:width .25s linear;
+}
 </style>
 </head>
 <body data-theme="light">
@@ -548,6 +634,15 @@ body.eco-mode .module-card, body.eco-mode .back-btn, body.eco-mode .icon-btn, bo
   </div>
 
   <div id="pets-layer"></div>
+
+  <!-- SPLASH SCREEN (v3.6) -->
+  <div id="splash">
+    <div id="splash-icon-wrap">
+      <div id="splash-pop-layer"></div>
+      <div id="splash-icon">🌿</div>
+    </div>
+    <div id="splash-progress"><div id="splash-progress-fill"></div></div>
+  </div>
 
   <!-- LOCK SCREEN -->
   <div id="lock">
@@ -649,6 +744,12 @@ body.eco-mode .module-card, body.eco-mode .back-btn, body.eco-mode .icon-btn, bo
         <div class="sub" id="profile-name-sub">Você</div>
       </button>
     </div>
+  </div>
+
+  <!-- REARRANGE MODE BAR (v3.6) -->
+  <div id="rearrange-bar">
+    <span>Toque pra redimensionar · arraste pra mover</span>
+    <button onclick="exitRearrangeMode()">Concluir</button>
   </div>
 
   <!-- PANELS -->
@@ -764,7 +865,7 @@ if(!DB.settings.widgetSizes){ DB.settings.widgetSizes={}; }
 if(!DB.settings.pets){ DB.settings.pets={steve:false}; }
 if(!DB.settings._petsResetV34){ DB.settings.pets={steve:false}; DB.settings._petsResetV34=true; }
 if(!DB.settings.petPositions){ DB.settings.petPositions={}; }
-DB.settings.version='3.5 (alfa)';
+DB.settings.version='3.6 (alfa)';
 if(DB._isFreshInstall){ DB.settings.lastSeenVersion = DB.settings.version; delete DB._isFreshInstall; }
 saveDB();
 
@@ -845,8 +946,8 @@ async function pinPress(k){
   }
 }
 const CURRENT_VERSION_NOTES = [
-  '🐛 Corrigido: o rabinho do Steve agora reage de verdade à direção do arrasto',
-  'Coração e setinhas agora substituem o rostinho na telinha (coração fica uns 3 segundos)'
+  '✨ Nova splash screen animada ao abrir o app',
+  '🧩 Agora dá pra reorganizar os módulos da Home: segure um card, arraste pra mover ou toque pra redimensionar'
 ];
 function unlockApp(){
   document.getElementById('lock').style.display='none';
@@ -893,6 +994,63 @@ renderPinPad();
 if(pinMode==='enter'){
   document.getElementById('lock-sub').textContent='Digite seu PIN';
 }
+
+/* ---------------- v3.6: SPLASH SCREEN ---------------- */
+function runSplash(){
+  const layer = document.getElementById('splash-pop-layer');
+  const fill = document.getElementById('splash-progress-fill');
+  const splash = document.getElementById('splash');
+  const items = ['Sua vida em um lugar','📚','✏️','🎓','📝','🧠','📖'];
+  const spread = [0,-70,-18,54,26,72,-40]; // horizontal spread in px per item (text stays centered)
+  const rise   = [-92,-64,-70,-58,-78,-52,-100]; // how far up each pops (px)
+
+  items.forEach((item, i)=>{
+    setTimeout(()=>{
+      const el = document.createElement('div');
+      el.className = 'splash-pop' + (item.length>3 ? ' is-text' : '');
+      el.textContent = item;
+      el.style.setProperty('--pop-y', rise[i]+'px');
+      el.style.left = 'calc(50% + '+spread[i]+'px)';
+      layer.appendChild(el);
+      setTimeout(()=>el.remove(), 2300);
+    }, 250 + i*180);
+  });
+
+  // fake-but-honest progress bar tied to real background init work
+  let pct = 0;
+  const progressTimer = setInterval(()=>{
+    pct = Math.min(96, pct + Math.random()*14);
+    fill.style.width = pct+'%';
+  }, 220);
+
+  // Real lightweight background prep while the animation plays —
+  // nothing here is allowed to block: just data prep for a snappier first paint.
+  const bgWork = new Promise(resolve=>{
+    requestAnimationFrame(()=>{
+      try{
+        precomputeHomeData();
+      }catch(e){ /* never let splash prep crash the app */ }
+      resolve();
+    });
+  });
+
+  const minDuration = new Promise(resolve=>setTimeout(resolve, 5000));
+
+  Promise.all([bgWork, minDuration]).then(()=>{
+    clearInterval(progressTimer);
+    fill.style.width='100%';
+    setTimeout(()=>{
+      splash.style.transition='opacity .35s ease';
+      splash.style.opacity='0';
+      setTimeout(()=>{ splash.style.display='none'; }, 360);
+    }, 150);
+  });
+}
+function precomputeHomeData(){
+  // Warms up the home screen render so it's instant the moment the PIN is entered.
+  if(typeof renderAll==='function') renderAll();
+}
+runSplash();
 
 /* ---------------- THEME ---------------- */
 function applyTheme(){
@@ -1133,7 +1291,11 @@ function renderBriefFull(){
   `;
 }
 
-/* ---------------- v2.0: REDIMENSIONAR WIDGETS (segurar pra alternar tamanho) ---------------- */
+/* ---------------- v3.6: REDIMENSIONAR + REORGANIZAR WIDGETS ----------------
+   Segurar um card entra no "modo reorganizar" (todos os cards balançam).
+   Dentro do modo: TOQUE num card = alterna tamanho normal/largo.
+                    ARRASTAR um card = muda sua posição na grade.
+   Toca em "Concluir" (ou fora) pra sair do modo e salvar a nova ordem. */
 function toggleWidgetSize(id){
   DB.settings.widgetSizes = DB.settings.widgetSizes || {};
   DB.settings.widgetSizes[id] = DB.settings.widgetSizes[id]==='wide' ? 'normal' : 'wide';
@@ -1147,20 +1309,120 @@ function applyWidgetSizes(){
     card.classList.toggle('wide', (DB.settings.widgetSizes||{})[id]==='wide');
   });
 }
+
+let rearrangeMode = false;
+
+function applyWidgetOrder(){
+  const order = DB.settings.widgetOrder;
+  if(!order) return;
+  document.querySelectorAll('.module-grid').forEach(grid=>{
+    const cards = Array.from(grid.querySelectorAll('.module-card[data-mid]'));
+    if(!cards.length) return;
+    cards.sort((a,b)=>{
+      const ia = order.indexOf(a.getAttribute('data-mid'));
+      const ib = order.indexOf(b.getAttribute('data-mid'));
+      return (ia===-1?999:ia) - (ib===-1?999:ib);
+    });
+    cards.forEach(c=> grid.appendChild(c));
+  });
+}
+function saveCurrentWidgetOrder(){
+  const order = Array.from(document.querySelectorAll('.module-card[data-mid]')).map(c=>c.getAttribute('data-mid'));
+  DB.settings.widgetOrder = order;
+  saveDB();
+}
+function enterRearrangeMode(){
+  if(rearrangeMode) return;
+  rearrangeMode = true;
+  document.querySelectorAll('.module-grid').forEach((grid,gi)=>{
+    grid.classList.add('rearrange-mode');
+    Array.from(grid.children).forEach((card,i)=> card.style.setProperty('--jiggle-delay', ((gi*7+i)*37)));
+  });
+  document.getElementById('rearrange-bar').classList.add('open');
+  if(navigator.vibrate) navigator.vibrate(15);
+}
+function exitRearrangeMode(){
+  if(!rearrangeMode) return;
+  rearrangeMode = false;
+  document.querySelectorAll('.module-grid').forEach(grid=> grid.classList.remove('rearrange-mode'));
+  document.getElementById('rearrange-bar').classList.remove('open');
+  saveCurrentWidgetOrder();
+  toast('Layout salvo!');
+}
+
 function attachLongPress(el, id){
   let timer=null, longPressed=false;
-  const start=()=>{ longPressed=false; timer=setTimeout(()=>{ longPressed=true; toggleWidgetSize(id); if(navigator.vibrate) navigator.vibrate(15); }, 480); };
+  let dragging=false, startX=0, startY=0, ghostGrid=null;
+
+  const start=(e)=>{
+    longPressed=false;
+    timer=setTimeout(()=>{
+      longPressed=true;
+      if(!rearrangeMode) enterRearrangeMode();
+      if(navigator.vibrate) navigator.vibrate(15);
+    }, 480);
+  };
   const clear=()=>{ clearTimeout(timer); };
-  el.addEventListener('pointerdown', start);
+
+  el.addEventListener('pointerdown', (e)=>{
+    start(e);
+    if(rearrangeMode){
+      startX = e.clientX; startY = e.clientY;
+      ghostGrid = el.parentElement;
+    }
+  });
   el.addEventListener('pointerup', clear);
   el.addEventListener('pointerleave', clear);
+
+  el.addEventListener('pointermove', (e)=>{
+    if(!rearrangeMode) return;
+    const dx = Math.abs(e.clientX-startX), dy = Math.abs(e.clientY-startY);
+    if(!dragging && (dx>10 || dy>10)){
+      dragging = true;
+      longPressed = true;
+      el.classList.add('dragging');
+      el.setPointerCapture(e.pointerId);
+    }
+    if(dragging){
+      const under = document.elementFromPoint(e.clientX, e.clientY);
+      const targetCard = under ? under.closest('.module-card[data-mid]') : null;
+      document.querySelectorAll('.module-card.drop-target').forEach(c=>c.classList.remove('drop-target'));
+      if(targetCard && targetCard!==el && targetCard.parentElement===ghostGrid){
+        targetCard.classList.add('drop-target');
+      }
+    }
+  });
+
+  el.addEventListener('pointerup', (e)=>{
+    if(dragging){
+      el.classList.remove('dragging');
+      const under = document.elementFromPoint(e.clientX, e.clientY);
+      const targetCard = under ? under.closest('.module-card[data-mid]') : null;
+      document.querySelectorAll('.module-card.drop-target').forEach(c=>c.classList.remove('drop-target'));
+      if(targetCard && targetCard!==el && targetCard.parentElement===ghostGrid){
+        const cards = Array.from(ghostGrid.children);
+        const elIdx = cards.indexOf(el), targetIdx = cards.indexOf(targetCard);
+        if(elIdx < targetIdx) ghostGrid.insertBefore(el, targetCard.nextSibling);
+        else ghostGrid.insertBefore(el, targetCard);
+      }
+      dragging = false;
+    }
+  });
+
   el.addEventListener('click', (e)=>{
+    if(dragging){ e.preventDefault(); e.stopImmediatePropagation(); return; }
+    if(rearrangeMode){
+      e.preventDefault(); e.stopImmediatePropagation();
+      toggleWidgetSize(id);
+      return;
+    }
     if(longPressed){ e.preventDefault(); e.stopImmediatePropagation(); longPressed=false; }
   }, true);
 }
 document.querySelectorAll('.module-card[data-mid]').forEach(card=>{
   attachLongPress(card, card.getAttribute('data-mid'));
 });
+applyWidgetOrder();
 
 /* ---------------- v2.0: BUSCA LIQUID GLASS ---------------- */
 function toggleSearch(){
