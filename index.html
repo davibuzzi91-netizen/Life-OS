@@ -589,7 +589,7 @@ body.eco-mode .module-card, body.eco-mode .back-btn, body.eco-mode .icon-btn, bo
   opacity:0;
   font-size:22px;
   white-space:nowrap;
-  animation:splashPopUp 1.9s cubic-bezier(.34,1.2,.4,1) forwards;
+  animation:splashPopUp 1.2s cubic-bezier(.34,1.2,.4,1) forwards;
 }
 .splash-pop.is-text{
   font-family:'Sora',sans-serif; font-weight:800; font-size:15px; color:#fff;
@@ -875,7 +875,7 @@ if(!DB.settings.widgetSizes){ DB.settings.widgetSizes={}; }
 if(!DB.settings.pets){ DB.settings.pets={steve:false}; }
 if(!DB.settings._petsResetV34){ DB.settings.pets={steve:false}; DB.settings._petsResetV34=true; }
 if(!DB.settings.petPositions){ DB.settings.petPositions={}; }
-DB.settings.version='3.6 (alfa)';
+DB.settings.version='3.7 (alfa)';
 if(DB._isFreshInstall){ DB.settings.lastSeenVersion = DB.settings.version; delete DB._isFreshInstall; }
 saveDB();
 
@@ -956,8 +956,7 @@ async function pinPress(k){
   }
 }
 const CURRENT_VERSION_NOTES = [
-  '✨ Nova splash screen animada ao abrir o app',
-  '🧩 Agora dá pra reorganizar os módulos da Home: segure um card, arraste pra mover ou toque pra redimensionar'
+  '🐛 Corrigido: emojis da tela de abertura que às vezes não apareciam (piscavam de forma aleatória)'
 ];
 function unlockApp(){
   document.getElementById('lock').style.display='none';
@@ -1023,6 +1022,10 @@ function runSplash(){
 
   // 2) Emojis keep popping out in a loop, each one always from the same fixed spot,
   //    around the icon but never on top of the text or too close to the icon.
+  //    IMPORTANT: the repeat interval must be >= the pop's full lifetime (animation + removal),
+  //    otherwise a new copy spawns on top of the still-fading old one and they visually clash —
+  //    that's what caused the "sometimes shows, sometimes doesn't" flicker.
+  const POP_LIFETIME = 1200; // matches the splashPopUp animation duration above
   const slots = [
     {emoji:'📚', x:-104, y:-30},
     {emoji:'✏️', x:104,  y:-30},
@@ -1032,6 +1035,7 @@ function runSplash(){
     {emoji:'📖', x:96,   y:66},
   ];
   let emojiTimers = [];
+  let stopped = false;
   function popEmoji(slot){
     const el = document.createElement('div');
     el.className = 'splash-pop';
@@ -1039,12 +1043,13 @@ function runSplash(){
     el.style.setProperty('--pop-y', slot.y+'px');
     el.style.setProperty('--pop-x', slot.x+'px');
     layer.appendChild(el);
-    setTimeout(()=> el.remove(), 1900);
+    setTimeout(()=> el.remove(), POP_LIFETIME);
   }
   function scheduleLoop(slot, delay){
     emojiTimers.push(setTimeout(function tick(){
+      if(stopped) return;
       popEmoji(slot);
-      emojiTimers.push(setTimeout(tick, 1500));
+      emojiTimers.push(setTimeout(tick, POP_LIFETIME + 120)); // small gap so the old copy is fully gone first
     }, delay));
   }
   slots.forEach((slot,i)=> scheduleLoop(slot, 300 + i*160));
@@ -1070,6 +1075,7 @@ function runSplash(){
   const minDuration = new Promise(resolve=>setTimeout(resolve, TOTAL_DURATION));
 
   Promise.all([bgWork, minDuration]).then(()=>{
+    stopped = true;
     clearInterval(progressTimer);
     emojiTimers.forEach(clearTimeout);
     fill.style.width='100%';
