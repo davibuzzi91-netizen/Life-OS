@@ -157,6 +157,17 @@ button{cursor:pointer; border:none; background:none;}
 .module-card .title{font-size:14.5px; font-weight:700;}
 .module-card .sub{font-size:11.5px; color:var(--text-soft);}
 
+/* ---------- v6.0: CASCATA DE ENTRADA DA HOME (pós-desbloqueio) ---------- */
+@keyframes homeCascadeIn{
+  from{ opacity:0; transform:translateY(34px) scale(0.82); }
+  to{ opacity:1; transform:translateY(0) scale(1); }
+}
+.home-cascade-item{
+  opacity:0;
+  animation:homeCascadeIn .7s cubic-bezier(.22,1,.36,1) forwards;
+  animation-delay:calc(var(--cascade-delay, 0) * 1ms);
+}
+
 /* ---------- v3.6: MODO REORGANIZAR (jiggle + drag) ---------- */
 @keyframes jiggle{
   0%{transform:rotate(-1deg);}
@@ -775,7 +786,7 @@ body.eco-mode .module-card, body.eco-mode .back-btn, body.eco-mode .icon-btn, bo
 
   <!-- HOME -->
   <div class="app-screen" id="home">
-    <div class="home-header">
+    <div class="home-header" id="home-header">
       <div class="greeting" id="greeting-text">Bom dia</div>
       <h1 id="home-title">LifeOS</h1>
     </div>
@@ -789,7 +800,7 @@ body.eco-mode .module-card, body.eco-mode .back-btn, body.eco-mode .icon-btn, bo
       </div>
     </div>
 
-    <div class="pill-home" onclick="openModule('brief', event)">
+    <div class="pill-home" id="daily-brief-pill" onclick="openModule('brief', event)">
       <div class="label">✦ Daily Brief · toque para expandir</div>
       <h2 id="brief-date">Hoje</h2>
       <div id="motivational-phrase" style="font-size:12.5px; color:rgba(255,255,255,0.85); font-style:italic; margin-bottom:10px;"></div>
@@ -988,7 +999,7 @@ if(!DB.settings.widgetSizes){ DB.settings.widgetSizes={}; }
 if(!DB.settings.pets){ DB.settings.pets={steve:false}; }
 if(!DB.settings._petsResetV34){ DB.settings.pets={steve:false}; DB.settings._petsResetV34=true; }
 if(!DB.settings.petPositions){ DB.settings.petPositions={}; }
-DB.settings.version='5.0';
+DB.settings.version='6.0';
 if(DB._isFreshInstall){ DB.settings.lastSeenVersion = DB.settings.version; delete DB._isFreshInstall; }
 saveDB();
 
@@ -1072,10 +1083,7 @@ async function pinPress(k){
   }
 }
 const CURRENT_VERSION_NOTES = [
-  '💾 Novo indicador de "Salvo" no topo da tela: toda vez que algo muda, o LifeOS confirma visualmente que já foi salvo no aparelho',
-  '🎨 Visual mais macio e orgânico: cantos bem mais arredondados em cards, botões e painéis, estilo One UI/iOS',
-  '🌊 Scroll elástico: puxar além do topo ou do fim da lista agora estica de leve e volta suavemente, em vez de travar seco',
-  '🧹 Revisão geral de estabilidade em todos os módulos antes do uso diário'
+  '✨ Nova animação ao desbloquear: a Home agora surge em cascata suave, elemento por elemento, em vez de aparecer tudo de uma vez'
 ];
 function unlockApp(){
   document.getElementById('lock').style.display='none';
@@ -1084,9 +1092,55 @@ function unlockApp(){
   checkAchievements();
   checkDailyAssuntoReminder();
   setInterval(checkDailyAssuntoReminder, 5*60*1000);
+  requestAnimationFrame(()=>requestAnimationFrame(playHomeCascadeIn));
   if(DB.settings.lastSeenVersion !== DB.settings.version){
     showWhatsNew();
   }
+}
+
+/* ---------- v6.0: animação de entrada da Home ao desbloquear ---------- */
+function playHomeCascadeIn(){
+  const CASCADE_STEP_MS = 110; // intervalo entre cada elemento
+  const items = [];
+
+  const header = document.getElementById('home-header');
+  if(header) items.push(header);
+
+  const streak = document.getElementById('streak-widget');
+  if(streak) items.push(streak);
+
+  const brief = document.getElementById('daily-brief-pill');
+  if(brief) items.push(brief);
+
+  const cards = document.querySelectorAll('#home .module-grid .module-card[data-mid]');
+  cards.forEach(c=>items.push(c));
+
+  // reseta todos primeiro (sem animação), depois força reflow em cada um
+  // individualmente, e só então dispara a entrada — evita que o navegador
+  // "funda" a remoção e a re-adição da classe num único frame e ignore a animação
+  items.forEach(el=>{
+    el.style.animation = 'none';
+    el.classList.remove('home-cascade-item');
+    void el.offsetHeight; // reflow por elemento, garante reset real do estado de animação
+  });
+
+  items.forEach((el, i)=>{
+    el.style.removeProperty('animation');
+    el.style.setProperty('--cascade-delay', i * CASCADE_STEP_MS);
+    el.classList.add('home-cascade-item');
+  });
+
+  // limpa a classe depois que a última animação termina, pra não interferir
+  // em outras transições (drag-and-drop, tap scale, etc.)
+  const totalMs = items.length * CASCADE_STEP_MS + 700 + 50;
+  clearTimeout(window._cascadeCleanupTimer);
+  window._cascadeCleanupTimer = setTimeout(()=>{
+    items.forEach(el=>{
+      el.classList.remove('home-cascade-item');
+      el.style.removeProperty('--cascade-delay');
+      el.style.opacity='';
+    });
+  }, totalMs);
 }
 function showWhatsNew(){
   document.getElementById('whats-new-version').textContent = 'v'+DB.settings.version;
@@ -2297,7 +2351,7 @@ function renderConfig(){
     <div class="settings-group">
       <h3>🆕 Atualizações</h3>
       <div class="settings-row">
-        <div><div class="lbl">Versão atual</div><div class="desc">v${esc(DB.settings.version||'5.0')}</div></div>
+        <div><div class="lbl">Versão atual</div><div class="desc">v${esc(DB.settings.version||'6.0')}</div></div>
       </div>
       <button class="history-toggle" onclick="toggleChangelog()">📜 Histórico de atualizações</button>
       <div id="changelog-box" style="display:none;">
