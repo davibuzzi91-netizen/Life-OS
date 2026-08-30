@@ -580,7 +580,7 @@ body.eco-mode .module-card, body.eco-mode .back-btn, body.eco-mode .icon-btn, bo
   100%{transform:rotate(0deg);}
 }
 #splash-pop-layer{
-  position:absolute; left:50%; bottom:100%; width:0; height:0;
+  position:absolute; left:50%; top:50%; width:0; height:0;
   pointer-events:none;
 }
 .splash-pop{
@@ -589,18 +589,28 @@ body.eco-mode .module-card, body.eco-mode .back-btn, body.eco-mode .icon-btn, bo
   opacity:0;
   font-size:22px;
   white-space:nowrap;
-  animation:splashPopUp 2.2s cubic-bezier(.34,1.2,.4,1) forwards;
+  animation:splashPopUp 1.9s cubic-bezier(.34,1.2,.4,1) forwards;
 }
 .splash-pop.is-text{
-  font-family:'Sora',sans-serif; font-weight:800; font-size:16px; color:#fff;
-  letter-spacing:-0.2px; max-width:70vw; text-align:center; white-space:normal;
+  font-family:'Sora',sans-serif; font-weight:800; font-size:15px; color:#fff;
+  letter-spacing:-0.2px; white-space:nowrap;
+}
+/* Settled text: pops up once and stays parked until told to retract */
+.splash-pop.is-settled{
+  animation:none;
+  transform:translate(-50%,0) scale(0.4);
+  transition:transform .6s cubic-bezier(.34,1.15,.4,1), opacity .5s ease;
+}
+.splash-pop.is-settled.show{
+  opacity:1;
+  transform:translate(-50%, var(--pop-y)) scale(1);
 }
 @keyframes splashPopUp{
-  0%{ opacity:0; transform:translate(-50%,0) scale(0.4); }
-  18%{ opacity:1; transform:translate(-50%, var(--pop-y)) scale(1.06); }
-  30%{ transform:translate(-50%, var(--pop-y)) scale(1); }
-  75%{ opacity:1; transform:translate(-50%, var(--pop-y)) scale(1); }
-  100%{ opacity:0; transform:translate(-50%,0) scale(0.5); }
+  0%{ opacity:0; transform:translate(calc(-50% + var(--pop-x, 0px)*0.15), 0) scale(0.4); }
+  18%{ opacity:1; transform:translate(calc(-50% + var(--pop-x, 0px)), var(--pop-y)) scale(1.06); }
+  30%{ transform:translate(calc(-50% + var(--pop-x, 0px)), var(--pop-y)) scale(1); }
+  75%{ opacity:1; transform:translate(calc(-50% + var(--pop-x, 0px)), var(--pop-y)) scale(1); }
+  100%{ opacity:0; transform:translate(calc(-50% + var(--pop-x, 0px)*0.15), 0) scale(0.5); }
 }
 #splash-progress{
   margin-top:34px; width:120px; height:3px; border-radius:99px;
@@ -1000,28 +1010,51 @@ function runSplash(){
   const layer = document.getElementById('splash-pop-layer');
   const fill = document.getElementById('splash-progress-fill');
   const splash = document.getElementById('splash');
-  const items = ['Sua vida em um lugar','📚','✏️','🎓','📝','🧠','📖'];
-  const spread = [0,-70,-18,54,26,72,-40]; // horizontal spread in px per item (text stays centered)
-  const rise   = [-92,-64,-70,-58,-78,-52,-100]; // how far up each pops (px)
+  const TOTAL_DURATION = 7000;
 
-  items.forEach((item, i)=>{
-    setTimeout(()=>{
-      const el = document.createElement('div');
-      el.className = 'splash-pop' + (item.length>3 ? ' is-text' : '');
-      el.textContent = item;
-      el.style.setProperty('--pop-y', rise[i]+'px');
-      el.style.left = 'calc(50% + '+spread[i]+'px)';
-      layer.appendChild(el);
-      setTimeout(()=>el.remove(), 2300);
-    }, 250 + i*180);
-  });
+  // 1) "Sua vida em um lugar" pops out once, settles horizontally above the icon, and stays put.
+  const textEl = document.createElement('div');
+  textEl.className = 'splash-pop is-text is-settled';
+  textEl.textContent = 'Sua vida em um lugar';
+  textEl.style.setProperty('--pop-y', '-98px');
+  textEl.style.left = '50%';
+  layer.appendChild(textEl);
+  setTimeout(()=> textEl.classList.add('show'), 30);
+
+  // 2) Emojis keep popping out in a loop, each one always from the same fixed spot,
+  //    around the icon but never on top of the text or too close to the icon.
+  const slots = [
+    {emoji:'📚', x:-104, y:-30},
+    {emoji:'✏️', x:104,  y:-30},
+    {emoji:'🎓', x:-124, y:20},
+    {emoji:'📝', x:124,  y:20},
+    {emoji:'🧠', x:-96,  y:66},
+    {emoji:'📖', x:96,   y:66},
+  ];
+  let emojiTimers = [];
+  function popEmoji(slot){
+    const el = document.createElement('div');
+    el.className = 'splash-pop';
+    el.textContent = slot.emoji;
+    el.style.setProperty('--pop-y', slot.y+'px');
+    el.style.setProperty('--pop-x', slot.x+'px');
+    layer.appendChild(el);
+    setTimeout(()=> el.remove(), 1900);
+  }
+  function scheduleLoop(slot, delay){
+    emojiTimers.push(setTimeout(function tick(){
+      popEmoji(slot);
+      emojiTimers.push(setTimeout(tick, 1500));
+    }, delay));
+  }
+  slots.forEach((slot,i)=> scheduleLoop(slot, 300 + i*160));
 
   // fake-but-honest progress bar tied to real background init work
   let pct = 0;
   const progressTimer = setInterval(()=>{
-    pct = Math.min(96, pct + Math.random()*14);
+    pct = Math.min(96, pct + Math.random()*10);
     fill.style.width = pct+'%';
-  }, 220);
+  }, 260);
 
   // Real lightweight background prep while the animation plays —
   // nothing here is allowed to block: just data prep for a snappier first paint.
@@ -1034,16 +1067,18 @@ function runSplash(){
     });
   });
 
-  const minDuration = new Promise(resolve=>setTimeout(resolve, 5000));
+  const minDuration = new Promise(resolve=>setTimeout(resolve, TOTAL_DURATION));
 
   Promise.all([bgWork, minDuration]).then(()=>{
     clearInterval(progressTimer);
+    emojiTimers.forEach(clearTimeout);
     fill.style.width='100%';
+    textEl.classList.remove('show'); // suck the text back into the icon
     setTimeout(()=>{
       splash.style.transition='opacity .35s ease';
       splash.style.opacity='0';
       setTimeout(()=>{ splash.style.display='none'; }, 360);
-    }, 150);
+    }, 400);
   });
 }
 function precomputeHomeData(){
