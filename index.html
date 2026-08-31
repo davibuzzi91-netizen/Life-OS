@@ -859,6 +859,7 @@ body.eco-mode .module-card, body.eco-mode .back-btn, body.eco-mode .icon-btn, bo
     <div id="tab-pill"></div>
     <button class="tab-btn" id="tab-btn-fora" onclick="goToScreen('fora')">🗂️</button>
     <button class="tab-btn active" id="tab-btn-home" onclick="goToScreen('home')">🏠</button>
+    <button class="tab-btn" id="tab-btn-loja" onclick="movePillTo('tab-btn-loja'); openModule('loja', {currentTarget: document.getElementById('tab-btn-loja')})">🧩</button>
     <button class="tab-btn" id="tab-btn-config" onclick="movePillTo('tab-btn-config'); openModule('config', {currentTarget: document.getElementById('tab-btn-config')})">⚙️</button>
   </div>
 
@@ -923,6 +924,36 @@ body.eco-mode .module-card, body.eco-mode .back-btn, body.eco-mode .icon-btn, bo
   <div class="panel" id="panel-config">
     <div class="panel-header"><button class="back-btn" onclick="closeModule('config')">←</button><h2>Configurações</h2></div>
     <div class="panel-body" id="body-config"></div>
+  </div>
+
+  <div class="panel" id="panel-loja">
+    <div class="panel-header"><button class="back-btn" onclick="closeModule('loja')">←</button><h2>Loja de Módulos</h2></div>
+    <div class="panel-body" id="body-loja"></div>
+  </div>
+
+  <div class="panel" id="panel-gaming">
+    <div class="panel-header"><button class="back-btn" onclick="closeModule('gaming')">←</button><h2>Gaming</h2></div>
+    <div class="panel-body" id="body-gaming"></div>
+  </div>
+  <div class="panel" id="panel-biblioteca">
+    <div class="panel-header"><button class="back-btn" onclick="closeModule('biblioteca')">←</button><h2>Biblioteca</h2></div>
+    <div class="panel-body" id="body-biblioteca"></div>
+  </div>
+  <div class="panel" id="panel-estatisticas">
+    <div class="panel-header"><button class="back-btn" onclick="closeModule('estatisticas')">←</button><h2>Estatísticas</h2></div>
+    <div class="panel-body" id="body-estatisticas"></div>
+  </div>
+  <div class="panel" id="panel-vocabulario">
+    <div class="panel-header"><button class="back-btn" onclick="closeModule('vocabulario')">←</button><h2>Vocabulário</h2></div>
+    <div class="panel-body" id="body-vocabulario"></div>
+  </div>
+  <div class="panel" id="panel-checklist">
+    <div class="panel-header"><button class="back-btn" onclick="closeModule('checklist')">←</button><h2>Checklist</h2></div>
+    <div class="panel-body" id="body-checklist"></div>
+  </div>
+  <div class="panel" id="panel-galeria">
+    <div class="panel-header"><button class="back-btn" onclick="closeModule('galeria')">←</button><h2>Galeria</h2></div>
+    <div class="panel-body" id="body-galeria"></div>
   </div>
 
   <div class="panel" id="panel-perfil">
@@ -999,7 +1030,14 @@ if(!DB.settings.widgetSizes){ DB.settings.widgetSizes={}; }
 if(!DB.settings.pets){ DB.settings.pets={steve:false}; }
 if(!DB.settings._petsResetV34){ DB.settings.pets={steve:false}; DB.settings._petsResetV34=true; }
 if(!DB.settings.petPositions){ DB.settings.petPositions={}; }
-DB.settings.version='6.0';
+if(!DB.installedModules){ DB.installedModules={}; } // v7.0: { moduleId: { installed:true, showOnHome:bool } }
+if(!DB.checklistData){ DB.checklistData=[]; }       // v7.0: [{id, title, items:[{id,text,done}]}]
+if(!DB.vocabularioData){ DB.vocabularioData=[]; }   // v7.0: [{id, term, definition, category, example, notes, date, fav}]
+if(!DB.gamingData){ DB.gamingData=[]; }             // v7.0: [{id, name, cover, platform, status, progress, hours, rating, genre, notes, startDate, endDate, fav}]
+if(!DB.bibliotecaData){ DB.bibliotecaData=[]; }     // v7.0: [{id, title, author, cover, genre, pages, pagesRead, rating, notes, startDate, endDate, fav, status}]
+if(!DB.galeriaData){ DB.galeriaData=[]; }           // v7.0: [{id, image, title, desc, album, tags:[], date, fav}]
+if(!DB.galeriaAlbums){ DB.galeriaAlbums=[]; }       // v7.0: [{id, name}]
+DB.settings.version='7.0';
 if(DB._isFreshInstall){ DB.settings.lastSeenVersion = DB.settings.version; delete DB._isFreshInstall; }
 saveDB();
 
@@ -1083,7 +1121,10 @@ async function pinPress(k){
   }
 }
 const CURRENT_VERSION_NOTES = [
-  '✨ Nova animação ao desbloquear: a Home agora surge em cascata suave, elemento por elemento, em vez de aparecer tudo de uma vez'
+  '🧩 Nova Loja de Módulos: instale extras como Gaming, Biblioteca, Checklist, Vocabulário, Galeria e Estatísticas',
+  '🏠 Escolha se cada módulo instalado aparece na Home ou fica só na aba Fora da Home — e mude isso quando quiser',
+  '✅ Os 6 módulos já vêm completos e funcionais: cadastre jogos, livros, termos, checklists reutilizáveis, fotos e veja estatísticas do seu uso do LifeOS',
+  '🗑️ Remova um módulo a qualquer momento sem afetar o resto do LifeOS'
 ];
 function unlockApp(){
   document.getElementById('lock').style.display='none';
@@ -1301,8 +1342,117 @@ const MODULE_META = {
   notas:{title:'Notas', emoji:'📊', color:'F4A100'},
   assuntos:{title:'Assuntos', emoji:'📖', color:'2D6A4F'},
   ai:{title:'LifeOS AI', emoji:'🤖', color:'F4A100'},
-  perfil:{title:'Perfil', emoji:'👤', color:'5B5B6B'}
+  perfil:{title:'Perfil', emoji:'👤', color:'5B5B6B'},
+  loja:{title:'Loja de Módulos', emoji:'🧩', color:'6B4EF4'},
+  gaming:{title:'Gaming', emoji:'🎮', color:'6B4EF4'},
+  biblioteca:{title:'Biblioteca', emoji:'📚', color:'A0522D'},
+  estatisticas:{title:'Estatísticas', emoji:'📊', color:'3B6FD6'},
+  vocabulario:{title:'Vocabulário', emoji:'📖', color:'2D6A4F'},
+  checklist:{title:'Checklist', emoji:'☑️', color:'C24A34'},
+  galeria:{title:'Galeria', emoji:'🖼️', color:'F4A100'}
 };
+
+/* ---------------- v7.0: LOJA DE MÓDULOS ---------------- */
+const STORE_CATALOG = [
+  {id:'gaming', emoji:'🎮', title:'Gaming', desc:'Organize sua coleção de jogos, progresso e horas jogadas.', category:'Entretenimento'},
+  {id:'biblioteca', emoji:'📚', title:'Biblioteca', desc:'Controle os livros que você tem, está lendo ou quer ler.', category:'Estudos'},
+  {id:'estatisticas', emoji:'📊', title:'Estatísticas', desc:'Veja gráficos e números sobre sua produtividade no LifeOS.', category:'Organização'},
+  {id:'vocabulario', emoji:'📖', title:'Vocabulário', desc:'Guarde palavras e termos que você quer aprender ou lembrar.', category:'Estudos'},
+  {id:'checklist', emoji:'☑️', title:'Checklist', desc:'Crie listas reutilizáveis de itens para conferir.', category:'Ferramentas'},
+  {id:'galeria', emoji:'🖼️', title:'Galeria', desc:'Uma galeria própria do LifeOS pra organizar suas imagens.', category:'Ferramentas'}
+];
+
+function isModuleInstalled(id){
+  return !!(DB.installedModules[id] && DB.installedModules[id].installed);
+}
+function moduleShowsOnHome(id){
+  return !!(DB.installedModules[id] && DB.installedModules[id].showOnHome);
+}
+function installModule(id, showOnHome){
+  DB.installedModules[id] = {installed:true, showOnHome:!!showOnHome};
+  saveDB();
+  renderStore();
+  renderAll(); // atualiza Home e Fora da Home caso o módulo apareça em algum dos dois
+  toast('Módulo instalado!', true);
+}
+function confirmRemoveModule(id){
+  const meta = STORE_CATALOG.find(m=>m.id===id);
+  if(!confirm('Remover "'+(meta?meta.title:id)+'"? Os dados desse módulo serão apagados. Essa ação não pode ser desfeita.')) return;
+  removeModule(id);
+}
+function removeModule(id){
+  delete DB.installedModules[id];
+  // limpeza defensiva: se o módulo guardou dados próprios em DB[id+'Data'], remove também,
+  // sem tocar em nenhum outro dado do app (isolamento entre módulos)
+  const dataKey = id+'Data';
+  if(DB[dataKey]!==undefined) delete DB[dataKey];
+  if(id==='galeria' && DB.galeriaAlbums!==undefined) delete DB.galeriaAlbums;
+  saveDB();
+  renderStore();
+  renderAll();
+  toast('Módulo removido');
+}
+function toggleModuleHome(id){
+  if(!DB.installedModules[id]) return;
+  DB.installedModules[id].showOnHome = !DB.installedModules[id].showOnHome;
+  saveDB();
+  renderStore();
+  renderAll();
+}
+function renderStore(){
+  const body = document.getElementById('body-loja');
+  if(!body) return;
+
+  const installedIds = STORE_CATALOG.filter(m=>isModuleInstalled(m.id));
+  const availableIds = STORE_CATALOG.filter(m=>!isModuleInstalled(m.id));
+
+  let html = '';
+
+  if(installedIds.length>0){
+    html += `<div class="settings-group"><h3>✅ Instalados</h3>`;
+    installedIds.forEach(m=>{
+      const onHome = moduleShowsOnHome(m.id);
+      html += `
+        <div class="settings-row" style="flex-direction:column; align-items:stretch; gap:10px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div class="icon" style="width:42px; height:42px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:19px; background:rgba(0,0,0,0.06); flex-shrink:0;">${m.emoji}</div>
+            <div style="flex:1;">
+              <div class="lbl">${esc(m.title)}</div>
+              <div class="desc">${esc(m.desc)}</div>
+            </div>
+          </div>
+          <div class="settings-row" style="padding:0;">
+            <div><div class="lbl" style="font-size:13px;">Mostrar na Home</div><div class="desc">Desligado, fica só aqui na Loja</div></div>
+            <div class="switch ${onHome?'on':''}" onclick="toggleModuleHome('${m.id}')"><div class="knob"></div></div>
+          </div>
+          <button class="btn-secondary" style="color:var(--danger); border-color:var(--danger);" onclick="confirmRemoveModule('${m.id}')">Remover módulo</button>
+        </div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `<div class="settings-group"><h3>🛍️ Disponíveis</h3>`;
+  if(availableIds.length===0){
+    html += `<div class="settings-row"><div class="desc">Você já instalou todos os módulos disponíveis por enquanto.</div></div>`;
+  } else {
+    availableIds.forEach(m=>{
+      html += `
+        <div class="settings-row" style="flex-direction:column; align-items:stretch; gap:10px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div class="icon" style="width:42px; height:42px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:19px; background:rgba(0,0,0,0.06); flex-shrink:0;">${m.emoji}</div>
+            <div style="flex:1;">
+              <div class="lbl">${esc(m.title)}</div>
+              <div class="desc">${esc(m.desc)}</div>
+            </div>
+          </div>
+          <button class="btn-secondary" onclick="installModule('${m.id}', true)">Instalar</button>
+        </div>`;
+    });
+  }
+  html += `</div>`;
+
+  body.innerHTML = html;
+}
 function setFavicon(emoji, color){
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='28' fill='%23${color}'/><text x='50' y='64' font-size='52' text-anchor='middle'>${encodeURIComponent(emoji)}</text></svg>`;
   document.getElementById('favicon').href = 'data:image/svg+xml,'+svg;
@@ -1457,7 +1607,7 @@ function closeModule(id){
     panel.classList.remove('active');
     document.body.classList.remove('panel-open');
     panel.style.willChange='auto';
-    if(id==='config') movePillTo('tab-btn-'+currentScreen); // config isn't a swipeable screen; restore the pill only once the tab bar is visible again (offsetLeft is 0 while display:none)
+    if(id==='config' || id==='loja') movePillTo('tab-btn-'+currentScreen); // config/loja aren't swipeable screens; restore the pill only once the tab bar is visible again (offsetLeft is 0 while display:none)
   }, 240);
   resetFavicon();
   renderAll();
@@ -1467,9 +1617,11 @@ function renderModule(id){
     brief:renderBriefFull,
     tarefas:renderTarefas, agenda:renderAgenda, metas:renderMetas, habitos:renderHabitos,
     trabalhos:renderTrabalhos, notas:renderNotasBoletim, config:renderConfig, perfil:renderPerfil, ai:renderAI,
-    aulas:renderAulas, assuntos:renderAssuntos
+    aulas:renderAulas, assuntos:renderAssuntos, loja:renderStore,
+    checklist:renderChecklist, vocabulario:renderVocabulario, gaming:renderGaming,
+    biblioteca:renderBiblioteca, galeria:renderGaleria, estatisticas:renderEstatisticas
   }[id];
-  if(fn) fn();
+  if(fn) fn(id);
 }
 
 /* ---------------- HOME / DAILY BRIEF ---------------- */
@@ -1577,6 +1729,37 @@ function renderAll(){
 
   applyWidgetSizes();
   renderPets();
+  syncInstalledModuleCards();
+}
+
+/* ---------------- v7.0: cards dinâmicos dos módulos da Loja ---------------- */
+function syncInstalledModuleCards(){
+  const homeGrid = document.querySelector('#home .module-grid');
+  const foraGrid = document.querySelector('#screen-fora .module-grid');
+  if(!homeGrid || !foraGrid) return;
+
+  // remove cards de módulos da loja que já existiam de uma renderização anterior,
+  // sem tocar em nenhum card fixo do app (eles não têm essa marca)
+  document.querySelectorAll('[data-store-module]').forEach(el=>el.remove());
+
+  STORE_CATALOG.forEach(m=>{
+    if(!isModuleInstalled(m.id)) return;
+    const card = document.createElement('button');
+    card.className = 'module-card';
+    card.setAttribute('data-mid', m.id);
+    card.setAttribute('data-store-module', '1');
+    card.onclick = (evt)=>openModule(m.id, evt);
+    card.innerHTML = `
+      <div class="icon" style="background:rgba(0,0,0,0.06);">${m.emoji}</div>
+      <div class="title">${esc(m.title)}</div>
+      <div class="sub">Módulo da Loja</div>`;
+    if(moduleShowsOnHome(m.id)){
+      homeGrid.appendChild(card);
+    } else {
+      card.classList.add('wide');
+      foraGrid.appendChild(card);
+    }
+  });
 }
 function fmtDate(d){
   const dt=new Date(d+'T00:00:00');
@@ -2351,7 +2534,7 @@ function renderConfig(){
     <div class="settings-group">
       <h3>🆕 Atualizações</h3>
       <div class="settings-row">
-        <div><div class="lbl">Versão atual</div><div class="desc">v${esc(DB.settings.version||'6.0')}</div></div>
+        <div><div class="lbl">Versão atual</div><div class="desc">v${esc(DB.settings.version||'7.0')}</div></div>
       </div>
       <button class="history-toggle" onclick="toggleChangelog()">📜 Histórico de atualizações</button>
       <div id="changelog-box" style="display:none;">
@@ -2920,6 +3103,651 @@ function togglePet(id){
   DB.settings.pets = DB.settings.pets || {};
   DB.settings.pets[id] = !DB.settings.pets[id];
   saveDB(); renderPets(); renderConfig();
+}
+
+/* =========================================================================
+   v7.0 — MÓDULOS DA LOJA
+   ========================================================================= */
+
+/* ---------------- ☑️ CHECKLIST ---------------- */
+function renderChecklist(){
+  const body = document.getElementById('body-checklist');
+  let html = `<button class="btn-primary" style="width:100%; margin-bottom:16px;" onclick="openChecklistForm()">+ Nova checklist</button>`;
+  html += `<div id="checklist-list"></div>`;
+  body.innerHTML = html;
+  drawChecklists();
+}
+function drawChecklists(){
+  const wrap = document.getElementById('checklist-list');
+  if(!wrap) return;
+  const list = DB.checklistData;
+  wrap.innerHTML = list.length ? list.map(cl=>{
+    const total = cl.items.length;
+    const done = cl.items.filter(i=>i.done).length;
+    return `
+    <div class="item-card">
+      <div class="item-top">
+        <div style="flex:1;">
+          <div class="item-title">${esc(cl.title)}</div>
+          <div class="item-meta">${done}/${total} concluídos</div>
+        </div>
+        <button class="icon-btn danger" onclick="deleteChecklist('${cl.id}')">🗑</button>
+      </div>
+      <div style="margin-top:10px; display:flex; flex-direction:column; gap:8px;">
+        ${cl.items.map(it=>`
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="switch ${it.done?'on':''}" style="flex-shrink:0;" onclick="toggleChecklistItem('${cl.id}','${it.id}')"><div class="knob"></div></div>
+            <div style="flex:1; font-size:13.5px; ${it.done?'text-decoration:line-through; color:var(--text-soft);':''}">${esc(it.text)}</div>
+            <button class="icon-btn danger" onclick="deleteChecklistItem('${cl.id}','${it.id}')" style="font-size:12px;">✕</button>
+          </div>`).join('')}
+      </div>
+      <div style="display:flex; gap:8px; margin-top:12px;">
+        <input id="new-item-${cl.id}" placeholder="Novo item..." style="flex:1;" onkeydown="if(event.key==='Enter')addChecklistItem('${cl.id}')">
+        <button class="icon-btn" onclick="addChecklistItem('${cl.id}')">+</button>
+      </div>
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <button class="btn-secondary" style="flex:1;" onclick="resetChecklist('${cl.id}')">🧹 Reiniciar</button>
+        <button class="btn-secondary" style="flex:1;" onclick="duplicateChecklist('${cl.id}')">📋 Duplicar</button>
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty-state"><div class="em">☑️</div><p>Nenhuma checklist criada ainda.</p></div>';
+}
+function openChecklistForm(){
+  const body = document.getElementById('body-checklist');
+  body.innerHTML = `
+    <div class="form-card">
+      <div class="field"><label>Nome da checklist</label><input id="cl-title" placeholder="Ex: Preparar mochila"></div>
+      <button class="btn-primary" onclick="saveChecklist()">Criar</button>
+    </div>` + body.innerHTML;
+}
+function saveChecklist(){
+  const title = document.getElementById('cl-title').value.trim();
+  if(!title){ toast('Dê um nome pra checklist'); return; }
+  DB.checklistData.push({id:uid(), title, items:[]});
+  saveDB(); renderChecklist(); toast('Checklist criada!', true);
+}
+function deleteChecklist(id){
+  if(!confirm('Excluir essa checklist? Essa ação não pode ser desfeita.')) return;
+  DB.checklistData = DB.checklistData.filter(c=>c.id!==id);
+  saveDB(); renderChecklist();
+}
+function addChecklistItem(clId){
+  const input = document.getElementById('new-item-'+clId);
+  const text = input.value.trim();
+  if(!text) return;
+  const cl = DB.checklistData.find(c=>c.id===clId);
+  if(!cl) return;
+  cl.items.push({id:uid(), text, done:false});
+  saveDB(); drawChecklists();
+}
+function toggleChecklistItem(clId, itemId){
+  const cl = DB.checklistData.find(c=>c.id===clId);
+  if(!cl) return;
+  const it = cl.items.find(i=>i.id===itemId);
+  if(!it) return;
+  it.done = !it.done;
+  saveDB(); drawChecklists();
+}
+function deleteChecklistItem(clId, itemId){
+  const cl = DB.checklistData.find(c=>c.id===clId);
+  if(!cl) return;
+  cl.items = cl.items.filter(i=>i.id!==itemId);
+  saveDB(); drawChecklists();
+}
+function resetChecklist(clId){
+  const cl = DB.checklistData.find(c=>c.id===clId);
+  if(!cl) return;
+  cl.items.forEach(i=>i.done=false);
+  saveDB(); drawChecklists(); toast('Checklist reiniciada!');
+}
+function duplicateChecklist(clId){
+  const cl = DB.checklistData.find(c=>c.id===clId);
+  if(!cl) return;
+  const copy = {id:uid(), title:cl.title+' (cópia)', items:cl.items.map(i=>({id:uid(), text:i.text, done:false}))};
+  DB.checklistData.push(copy);
+  saveDB(); renderChecklist(); toast('Checklist duplicada!');
+}
+
+/* ---------------- 📖 VOCABULÁRIO ---------------- */
+function renderVocabulario(){
+  const body = document.getElementById('body-vocabulario');
+  let html = `<div class="field"><input id="voc-search" placeholder="Pesquisar termos..." oninput="filterVocabulario()"></div>`;
+  html += `<div style="display:flex; gap:8px; margin-bottom:16px;">
+      <button class="btn-secondary" style="flex:1;" onclick="sortVocabulario('date')">🕒 Recentes</button>
+      <button class="btn-secondary" style="flex:1;" onclick="sortVocabulario('az')">🔤 A-Z</button>
+    </div>`;
+  html += `<button class="btn-primary" style="width:100%; margin-bottom:16px;" onclick="openVocabForm()">+ Adicionar termo</button>`;
+  html += `<div id="voc-list"></div>`;
+  body.innerHTML = html;
+  drawVocabulario(DB.vocabularioData);
+}
+function drawVocabulario(list){
+  const wrap = document.getElementById('voc-list');
+  if(!wrap) return;
+  wrap.innerHTML = list.length ? list.map(v=>`
+    <div class="item-card">
+      <div class="item-top">
+        <div style="flex:1;">
+          <div class="item-title">${esc(v.term)} ${v.fav?'⭐':''}</div>
+          ${v.category?`<span class="chip green">${esc(v.category)}</span>`:''}
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button class="icon-btn" onclick="toggleVocabFav('${v.id}')">${v.fav?'★':'☆'}</button>
+          <button class="icon-btn danger" onclick="deleteVocab('${v.id}')">🗑</button>
+        </div>
+      </div>
+      <div class="item-desc">${esc(v.definition)}</div>
+      ${v.example?`<div class="item-meta" style="margin-top:6px; font-style:italic;">"${esc(v.example)}"</div>`:''}
+      ${v.notes?`<div class="item-meta" style="margin-top:4px;">${esc(v.notes)}</div>`:''}
+    </div>
+  `).join('') : '<div class="empty-state"><div class="em">📖</div><p>Nenhum termo salvo ainda.</p></div>';
+}
+function filterVocabulario(){
+  const q = normalizeSearch(document.getElementById('voc-search').value);
+  drawVocabulario(DB.vocabularioData.filter(v=> normalizeSearch(v.term).includes(q) || normalizeSearch(v.definition).includes(q)));
+}
+function sortVocabulario(mode){
+  const sorted = [...DB.vocabularioData];
+  if(mode==='az') sorted.sort((a,b)=>a.term.localeCompare(b.term));
+  else sorted.sort((a,b)=>b.date.localeCompare(a.date));
+  drawVocabulario(sorted);
+}
+function toggleVocabFav(id){
+  const v = DB.vocabularioData.find(x=>x.id===id);
+  if(!v) return;
+  v.fav = !v.fav;
+  saveDB(); drawVocabulario(DB.vocabularioData);
+}
+function deleteVocab(id){
+  DB.vocabularioData = DB.vocabularioData.filter(v=>v.id!==id);
+  saveDB(); drawVocabulario(DB.vocabularioData);
+}
+function openVocabForm(){
+  const body = document.getElementById('body-vocabulario');
+  body.innerHTML = `
+    <div class="form-card">
+      <div class="field"><label>Palavra/termo</label><input id="voc-term" placeholder="Ex: Serendipidade"></div>
+      <div class="field"><label>Definição</label><textarea id="voc-def" placeholder="O que isso significa?"></textarea></div>
+      <div class="field"><label>Categoria (opcional)</label><input id="voc-cat" placeholder="Ex: Filosofia, Inglês..."></div>
+      <div class="field"><label>Exemplo (opcional)</label><input id="voc-example" placeholder="Uma frase usando o termo"></div>
+      <div class="field"><label>Observações (opcional)</label><textarea id="voc-notes"></textarea></div>
+      <button class="btn-primary" onclick="saveVocab()">Salvar</button>
+    </div>` + body.innerHTML;
+}
+function saveVocab(){
+  const term = document.getElementById('voc-term').value.trim();
+  const definition = document.getElementById('voc-def').value.trim();
+  if(!term || !definition){ toast('Preencha o termo e a definição'); return; }
+  DB.vocabularioData.push({
+    id:uid(), term, definition,
+    category:document.getElementById('voc-cat').value.trim(),
+    example:document.getElementById('voc-example').value.trim(),
+    notes:document.getElementById('voc-notes').value.trim(),
+    date:todayStr(), fav:false
+  });
+  saveDB(); renderVocabulario(); toast('Termo salvo!', true);
+}
+
+/* ---------------- 🎮 GAMING ---------------- */
+const GAMING_STATUSES = ['Quero jogar','Jogando','Pausado','Concluído','Abandonado'];
+let gamingFilter = 'todos';
+function renderGaming(){
+  const body = document.getElementById('body-gaming');
+  let html = `<div class="field"><input id="game-search" placeholder="Pesquisar jogos..." oninput="filterGaming()"></div>`;
+  html += `<div style="display:flex; gap:8px; margin-bottom:16px; overflow-x:auto;">
+      <button class="btn-secondary" style="white-space:nowrap;" onclick="setGamingFilter('todos')">🎮 Todos</button>
+      <button class="btn-secondary" style="white-space:nowrap;" onclick="setGamingFilter('Jogando')">▶️ Jogando</button>
+      <button class="btn-secondary" style="white-space:nowrap;" onclick="setGamingFilter('Concluído')">✅ Concluídos</button>
+      <button class="btn-secondary" style="white-space:nowrap;" onclick="setGamingFilter('Quero jogar')">📌 Quero jogar</button>
+      <button class="btn-secondary" style="white-space:nowrap;" onclick="setGamingFilter('fav')">⭐ Favoritos</button>
+    </div>`;
+  html += `<button class="btn-primary" style="width:100%; margin-bottom:16px;" onclick="openGameForm()">+ Adicionar jogo</button>`;
+  html += `<div id="game-list"></div>`;
+  body.innerHTML = html;
+  drawGaming();
+}
+function setGamingFilter(f){ gamingFilter = f; drawGaming(); }
+function getFilteredGames(){
+  let list = DB.gamingData;
+  if(gamingFilter==='fav') list = list.filter(g=>g.fav);
+  else if(gamingFilter!=='todos') list = list.filter(g=>g.status===gamingFilter);
+  return list;
+}
+function drawGaming(){
+  const wrap = document.getElementById('game-list');
+  if(!wrap) return;
+  const list = getFilteredGames();
+  wrap.innerHTML = list.length ? list.map(g=>`
+    <div class="item-card">
+      <div class="item-top">
+        <div style="display:flex; gap:10px; flex:1;">
+          ${g.cover?`<img src="${g.cover}" style="width:52px; height:52px; border-radius:10px; object-fit:cover; flex-shrink:0;">`:`<div class="icon" style="width:52px; height:52px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.06); flex-shrink:0;">🎮</div>`}
+          <div style="flex:1;">
+            <div class="item-title">${esc(g.name)} ${g.fav?'⭐':''}</div>
+            <span class="chip green">${esc(g.status)}</span>
+            ${g.platform?`<span class="chip yellow">${esc(g.platform)}</span>`:''}
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <button class="icon-btn" onclick="toggleGameFav('${g.id}')">${g.fav?'★':'☆'}</button>
+          <button class="icon-btn danger" onclick="deleteGame('${g.id}')">🗑</button>
+        </div>
+      </div>
+      ${g.progress!=null && g.progress!==''?`<div class="item-meta" style="margin-top:8px;">Progresso: ${esc(String(g.progress))}%</div>`:''}
+      ${g.hours?`<div class="item-meta">${esc(String(g.hours))}h jogadas</div>`:''}
+      ${g.rating?`<div class="item-meta">Avaliação: ${'⭐'.repeat(Math.min(5,Number(g.rating)||0))}</div>`:''}
+      ${g.notes?`<div class="item-desc">${esc(g.notes)}</div>`:''}
+      <button class="btn-secondary" style="width:100%; margin-top:10px;" onclick="openGameForm('${g.id}')">✏️ Editar</button>
+    </div>
+  `).join('') : '<div class="empty-state"><div class="em">🎮</div><p>Nenhum jogo por aqui ainda.</p></div>';
+}
+function filterGaming(){
+  const q = normalizeSearch(document.getElementById('game-search').value);
+  const wrap = document.getElementById('game-list');
+  const list = getFilteredGames().filter(g=>normalizeSearch(g.name).includes(q));
+  wrap.innerHTML = list.length ? list.map(g=>`
+    <div class="item-card">
+      <div class="item-top">
+        <div style="display:flex; gap:10px; flex:1;">
+          ${g.cover?`<img src="${g.cover}" style="width:52px; height:52px; border-radius:10px; object-fit:cover; flex-shrink:0;">`:`<div class="icon" style="width:52px; height:52px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.06); flex-shrink:0;">🎮</div>`}
+          <div style="flex:1;">
+            <div class="item-title">${esc(g.name)} ${g.fav?'⭐':''}</div>
+            <span class="chip green">${esc(g.status)}</span>
+            ${g.platform?`<span class="chip yellow">${esc(g.platform)}</span>`:''}
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <button class="icon-btn" onclick="toggleGameFav('${g.id}')">${g.fav?'★':'☆'}</button>
+          <button class="icon-btn danger" onclick="deleteGame('${g.id}')">🗑</button>
+        </div>
+      </div>
+      ${g.progress!=null && g.progress!==''?`<div class="item-meta" style="margin-top:8px;">Progresso: ${esc(String(g.progress))}%</div>`:''}
+      ${g.hours?`<div class="item-meta">${esc(String(g.hours))}h jogadas</div>`:''}
+      <button class="btn-secondary" style="width:100%; margin-top:10px;" onclick="openGameForm('${g.id}')">✏️ Editar</button>
+    </div>
+  `).join('') : '<div class="empty-state"><div class="em">🎮</div><p>Nada encontrado.</p></div>';
+}
+function toggleGameFav(id){
+  const g = DB.gamingData.find(x=>x.id===id);
+  if(!g) return;
+  g.fav = !g.fav;
+  saveDB(); drawGaming();
+}
+function deleteGame(id){
+  if(!confirm('Remover esse jogo da sua coleção?')) return;
+  DB.gamingData = DB.gamingData.filter(g=>g.id!==id);
+  saveDB(); drawGaming();
+}
+function openGameForm(editId){
+  const g = editId ? DB.gamingData.find(x=>x.id===editId) : null;
+  const body = document.getElementById('body-gaming');
+  body.innerHTML = `
+    <div class="form-card">
+      <div class="field"><label>Nome do jogo</label><input id="game-name" value="${g?esc(g.name):''}" placeholder="Ex: Hollow Knight"></div>
+      <div class="field"><label>Capa (opcional)</label><input id="game-cover" type="file" accept="image/*"></div>
+      <div class="field"><label>Plataforma</label><input id="game-platform" value="${g?esc(g.platform||''):''}" placeholder="Ex: PC, PS5, Switch..."></div>
+      <div class="field"><label>Status</label>
+        <select id="game-status">${GAMING_STATUSES.map(s=>`<option ${g&&g.status===s?'selected':''}>${s}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>Gênero (opcional)</label><input id="game-genre" value="${g?esc(g.genre||''):''}" placeholder="Ex: Metroidvania"></div>
+      <div class="field"><label>Progresso % (opcional)</label><input id="game-progress" type="number" min="0" max="100" value="${g&&g.progress!=null?g.progress:''}"></div>
+      <div class="field"><label>Horas jogadas (opcional)</label><input id="game-hours" type="number" min="0" value="${g&&g.hours!=null?g.hours:''}"></div>
+      <div class="field"><label>Avaliação 1-5 (opcional)</label><input id="game-rating" type="number" min="1" max="5" value="${g&&g.rating!=null?g.rating:''}"></div>
+      <div class="field"><label>Observações (opcional)</label><textarea id="game-notes">${g?esc(g.notes||''):''}</textarea></div>
+      <button class="btn-primary" onclick="saveGame(${g?`'${g.id}'`:'null'})">Salvar</button>
+    </div>` + body.innerHTML;
+}
+function saveGame(editId){
+  const name = document.getElementById('game-name').value.trim();
+  if(!name){ toast('Dê um nome ao jogo'); return; }
+  const fileInput = document.getElementById('game-cover');
+  const fields = {
+    name,
+    platform:document.getElementById('game-platform').value.trim(),
+    status:document.getElementById('game-status').value,
+    genre:document.getElementById('game-genre').value.trim(),
+    progress:document.getElementById('game-progress').value ? Number(document.getElementById('game-progress').value) : null,
+    hours:document.getElementById('game-hours').value ? Number(document.getElementById('game-hours').value) : null,
+    rating:document.getElementById('game-rating').value ? Number(document.getElementById('game-rating').value) : null,
+    notes:document.getElementById('game-notes').value.trim()
+  };
+  const finish = (coverData)=>{
+    if(editId){
+      const g = DB.gamingData.find(x=>x.id===editId);
+      Object.assign(g, fields);
+      if(coverData) g.cover = coverData;
+    } else {
+      DB.gamingData.push({id:uid(), ...fields, cover:coverData||null, fav:false, startDate:todayStr(), endDate:null});
+    }
+    saveDB(); renderGaming(); toast('Salvo!', true);
+  };
+  if(fileInput.files && fileInput.files[0]){
+    const reader = new FileReader();
+    reader.onload = (e)=>finish(e.target.result);
+    reader.readAsDataURL(fileInput.files[0]);
+  } else { finish(null); }
+}
+
+/* ---------------- 📚 BIBLIOTECA ---------------- */
+const LIVRO_STATUSES = ['Quero ler','Lendo','Lido','Pausado','Abandonado'];
+let bibliotecaFilter = 'todos';
+function renderBiblioteca(){
+  const body = document.getElementById('body-biblioteca');
+  let html = `<div class="field"><input id="livro-search" placeholder="Pesquisar livros..." oninput="filterBiblioteca()"></div>`;
+  html += `<div style="display:flex; gap:8px; margin-bottom:16px; overflow-x:auto;">
+      <button class="btn-secondary" style="white-space:nowrap;" onclick="setBibliotecaFilter('todos')">📚 Todos</button>
+      <button class="btn-secondary" style="white-space:nowrap;" onclick="setBibliotecaFilter('Lendo')">📕 Lendo</button>
+      <button class="btn-secondary" style="white-space:nowrap;" onclick="setBibliotecaFilter('Lido')">✅ Lidos</button>
+      <button class="btn-secondary" style="white-space:nowrap;" onclick="setBibliotecaFilter('Quero ler')">📖 Quero ler</button>
+      <button class="btn-secondary" style="white-space:nowrap;" onclick="setBibliotecaFilter('fav')">⭐ Favoritos</button>
+    </div>`;
+  html += `<button class="btn-primary" style="width:100%; margin-bottom:16px;" onclick="openLivroForm()">+ Adicionar livro</button>`;
+  html += `<div id="livro-list"></div>`;
+  body.innerHTML = html;
+  drawBiblioteca();
+}
+function setBibliotecaFilter(f){ bibliotecaFilter = f; drawBiblioteca(); }
+function getFilteredLivros(){
+  let list = DB.bibliotecaData;
+  if(bibliotecaFilter==='fav') list = list.filter(l=>l.fav);
+  else if(bibliotecaFilter!=='todos') list = list.filter(l=>l.status===bibliotecaFilter);
+  return list;
+}
+function livroCardHtml(l){
+  const pct = l.pages ? Math.min(100, Math.round((l.pagesRead||0)/l.pages*100)) : null;
+  return `
+    <div class="item-card">
+      <div class="item-top">
+        <div style="display:flex; gap:10px; flex:1;">
+          ${l.cover?`<img src="${l.cover}" style="width:52px; height:70px; border-radius:8px; object-fit:cover; flex-shrink:0;">`:`<div class="icon" style="width:52px; height:70px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.06); flex-shrink:0;">📚</div>`}
+          <div style="flex:1;">
+            <div class="item-title">${esc(l.title)} ${l.fav?'⭐':''}</div>
+            <div class="item-meta">${esc(l.author||'')}</div>
+            <span class="chip green">${esc(l.status)}</span>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <button class="icon-btn" onclick="toggleLivroFav('${l.id}')">${l.fav?'★':'☆'}</button>
+          <button class="icon-btn danger" onclick="deleteLivro('${l.id}')">🗑</button>
+        </div>
+      </div>
+      ${pct!=null?`<div class="item-meta" style="margin-top:8px;">${l.pagesRead||0} / ${l.pages} páginas · ${pct}%</div>`:''}
+      ${l.rating?`<div class="item-meta">Avaliação: ${'⭐'.repeat(Math.min(5,Number(l.rating)||0))}</div>`:''}
+      ${l.notes?`<div class="item-desc">${esc(l.notes)}</div>`:''}
+      <button class="btn-secondary" style="width:100%; margin-top:10px;" onclick="openLivroForm('${l.id}')">✏️ Editar</button>
+    </div>`;
+}
+function drawBiblioteca(){
+  const wrap = document.getElementById('livro-list');
+  if(!wrap) return;
+  const list = getFilteredLivros();
+  wrap.innerHTML = list.length ? list.map(livroCardHtml).join('') : '<div class="empty-state"><div class="em">📚</div><p>Nenhum livro na sua biblioteca ainda.</p></div>';
+}
+function filterBiblioteca(){
+  const q = normalizeSearch(document.getElementById('livro-search').value);
+  const wrap = document.getElementById('livro-list');
+  const list = getFilteredLivros().filter(l=>normalizeSearch(l.title).includes(q) || normalizeSearch(l.author).includes(q));
+  wrap.innerHTML = list.length ? list.map(livroCardHtml).join('') : '<div class="empty-state"><div class="em">📚</div><p>Nada encontrado.</p></div>';
+}
+function toggleLivroFav(id){
+  const l = DB.bibliotecaData.find(x=>x.id===id);
+  if(!l) return;
+  l.fav = !l.fav;
+  saveDB(); drawBiblioteca();
+}
+function deleteLivro(id){
+  if(!confirm('Remover esse livro da biblioteca?')) return;
+  DB.bibliotecaData = DB.bibliotecaData.filter(l=>l.id!==id);
+  saveDB(); drawBiblioteca();
+}
+function openLivroForm(editId){
+  const l = editId ? DB.bibliotecaData.find(x=>x.id===editId) : null;
+  const body = document.getElementById('body-biblioteca');
+  body.innerHTML = `
+    <div class="form-card">
+      <div class="field"><label>Título</label><input id="livro-title" value="${l?esc(l.title):''}" placeholder="Ex: Duna"></div>
+      <div class="field"><label>Autor (opcional)</label><input id="livro-author" value="${l?esc(l.author||''):''}"></div>
+      <div class="field"><label>Capa (opcional)</label><input id="livro-cover" type="file" accept="image/*"></div>
+      <div class="field"><label>Status</label>
+        <select id="livro-status">${LIVRO_STATUSES.map(s=>`<option ${l&&l.status===s?'selected':''}>${s}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>Gênero (opcional)</label><input id="livro-genre" value="${l?esc(l.genre||''):''}"></div>
+      <div class="field"><label>Número de páginas (opcional)</label><input id="livro-pages" type="number" min="0" value="${l&&l.pages!=null?l.pages:''}"></div>
+      <div class="field"><label>Páginas lidas (opcional)</label><input id="livro-pagesread" type="number" min="0" value="${l&&l.pagesRead!=null?l.pagesRead:''}"></div>
+      <div class="field"><label>Avaliação 1-5 (opcional)</label><input id="livro-rating" type="number" min="1" max="5" value="${l&&l.rating!=null?l.rating:''}"></div>
+      <div class="field"><label>Observações (opcional)</label><textarea id="livro-notes">${l?esc(l.notes||''):''}</textarea></div>
+      <button class="btn-primary" onclick="saveLivro(${l?`'${l.id}'`:'null'})">Salvar</button>
+    </div>` + body.innerHTML;
+}
+function saveLivro(editId){
+  const title = document.getElementById('livro-title').value.trim();
+  if(!title){ toast('Dê um título ao livro'); return; }
+  const fileInput = document.getElementById('livro-cover');
+  const fields = {
+    title,
+    author:document.getElementById('livro-author').value.trim(),
+    status:document.getElementById('livro-status').value,
+    genre:document.getElementById('livro-genre').value.trim(),
+    pages:document.getElementById('livro-pages').value ? Number(document.getElementById('livro-pages').value) : null,
+    pagesRead:document.getElementById('livro-pagesread').value ? Number(document.getElementById('livro-pagesread').value) : null,
+    rating:document.getElementById('livro-rating').value ? Number(document.getElementById('livro-rating').value) : null,
+    notes:document.getElementById('livro-notes').value.trim()
+  };
+  const finish = (coverData)=>{
+    if(editId){
+      const l = DB.bibliotecaData.find(x=>x.id===editId);
+      Object.assign(l, fields);
+      if(coverData) l.cover = coverData;
+    } else {
+      DB.bibliotecaData.push({id:uid(), ...fields, cover:coverData||null, fav:false, startDate:todayStr(), endDate:null});
+    }
+    saveDB(); renderBiblioteca(); toast('Salvo!', true);
+  };
+  if(fileInput.files && fileInput.files[0]){
+    const reader = new FileReader();
+    reader.onload = (e)=>finish(e.target.result);
+    reader.readAsDataURL(fileInput.files[0]);
+  } else { finish(null); }
+}
+
+/* ---------------- 🖼️ GALERIA ---------------- */
+let galeriaView = 'todas'; // 'todas' | 'favoritos' | albumId
+function renderGaleria(){
+  const body = document.getElementById('body-galeria');
+  let html = `<div class="field"><input id="galeria-search" placeholder="Pesquisar imagens..." oninput="filterGaleria()"></div>`;
+  html += `<div style="display:flex; gap:8px; margin-bottom:12px; overflow-x:auto;" id="galeria-tabs"></div>`;
+  html += `<div style="display:flex; gap:8px; margin-bottom:16px;">
+      <label class="btn-primary" style="flex:1; text-align:center; cursor:pointer; position:relative; overflow:hidden;">📷 Adicionar imagem<input id="galeria-upload" type="file" accept="image/*" style="position:absolute; width:1px; height:1px; opacity:0;" onchange="quickAddGaleriaImage(this)"></label>
+      <button class="btn-secondary" onclick="openNewAlbumForm()">📁 Novo álbum</button>
+    </div>`;
+  html += `<div id="galeria-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;"></div>`;
+  body.innerHTML = html;
+  drawGaleriaTabs();
+  drawGaleria();
+}
+function drawGaleriaTabs(){
+  const wrap = document.getElementById('galeria-tabs');
+  if(!wrap) return;
+  let html = `<button class="btn-secondary" style="white-space:nowrap; ${galeriaView==='todas'?'background:var(--verde); color:#fff;':''}" onclick="setGaleriaView('todas')">Todas</button>`;
+  html += `<button class="btn-secondary" style="white-space:nowrap; ${galeriaView==='favoritos'?'background:var(--verde); color:#fff;':''}" onclick="setGaleriaView('favoritos')">⭐ Favoritos</button>`;
+  DB.galeriaAlbums.forEach(a=>{
+    html += `<button class="btn-secondary" style="white-space:nowrap; ${galeriaView===a.id?'background:var(--verde); color:#fff;':''}" onclick="setGaleriaView('${a.id}')">${esc(a.name)}</button>`;
+  });
+  wrap.innerHTML = html;
+}
+function setGaleriaView(v){ galeriaView = v; drawGaleriaTabs(); drawGaleria(); }
+function getFilteredGaleria(){
+  let list = DB.galeriaData;
+  if(galeriaView==='favoritos') list = list.filter(i=>i.fav);
+  else if(galeriaView!=='todas') list = list.filter(i=>i.album===galeriaView);
+  return list;
+}
+function galeriaGridItemHtml(img){
+  return `
+    <div class="item-card" style="padding:0; overflow:hidden; cursor:pointer;" onclick="openGaleriaImage('${img.id}')">
+      <img src="${img.image}" style="width:100%; height:140px; object-fit:cover; display:block;">
+      <div style="padding:8px 10px;">
+        <div class="item-title" style="font-size:12.5px;">${esc(img.title||'Sem título')} ${img.fav?'⭐':''}</div>
+      </div>
+    </div>`;
+}
+function drawGaleria(){
+  const wrap = document.getElementById('galeria-grid');
+  if(!wrap) return;
+  const list = [...getFilteredGaleria()].sort((a,b)=>b.date.localeCompare(a.date));
+  wrap.innerHTML = list.length ? list.map(galeriaGridItemHtml).join('') : '<div class="empty-state" style="grid-column:1/-1;"><div class="em">🖼️</div><p>Nenhuma imagem por aqui ainda.</p></div>';
+}
+function filterGaleria(){
+  const q = normalizeSearch(document.getElementById('galeria-search').value);
+  const wrap = document.getElementById('galeria-grid');
+  const list = getFilteredGaleria().filter(i=> normalizeSearch(i.title).includes(q) || (i.tags||[]).some(t=>normalizeSearch(t).includes(q)));
+  wrap.innerHTML = list.length ? list.map(galeriaGridItemHtml).join('') : '<div class="empty-state" style="grid-column:1/-1;"><div class="em">🖼️</div><p>Nada encontrado.</p></div>';
+}
+function quickAddGaleriaImage(input){
+  if(!input.files || !input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    DB.galeriaData.push({id:uid(), image:e.target.result, title:'', desc:'', album:galeriaView!=='todas'&&galeriaView!=='favoritos'?galeriaView:'', tags:[], date:todayStr(), fav:false});
+    saveDB(); drawGaleria(); toast('Imagem adicionada!', true);
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+function openNewAlbumForm(){
+  const name = prompt('Nome do novo álbum:');
+  if(!name || !name.trim()) return;
+  DB.galeriaAlbums.push({id:uid(), name:name.trim()});
+  saveDB(); drawGaleriaTabs(); toast('Álbum criado!');
+}
+function openGaleriaImage(id){
+  const img = DB.galeriaData.find(i=>i.id===id);
+  if(!img) return;
+  const body = document.getElementById('body-galeria');
+  const albumOptions = `<option value="">Sem álbum</option>` + DB.galeriaAlbums.map(a=>`<option value="${a.id}" ${img.album===a.id?'selected':''}>${esc(a.name)}</option>`).join('');
+  body.innerHTML = `
+    <div class="form-card">
+      <img src="${img.image}" style="width:100%; border-radius:12px; margin-bottom:14px; max-height:320px; object-fit:contain; background:rgba(0,0,0,0.04);">
+      <div class="field"><label>Título</label><input id="gal-title" value="${esc(img.title||'')}"></div>
+      <div class="field"><label>Descrição</label><textarea id="gal-desc">${esc(img.desc||'')}</textarea></div>
+      <div class="field"><label>Álbum</label><select id="gal-album">${albumOptions}</select></div>
+      <div class="field"><label>Tags (separadas por vírgula)</label><input id="gal-tags" value="${esc((img.tags||[]).join(', '))}"></div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn-secondary" style="flex:1;" onclick="toggleGaleriaFav('${img.id}')">${img.fav?'★ Favoritado':'☆ Favoritar'}</button>
+        <button class="btn-secondary" style="flex:1; color:var(--danger); border-color:var(--danger);" onclick="deleteGaleriaImage('${img.id}')">🗑 Excluir</button>
+      </div>
+      <button class="btn-primary" style="margin-top:10px;" onclick="saveGaleriaImageInfo('${img.id}')">Salvar</button>
+    </div>` + `<button class="btn-secondary" style="width:100%; margin-top:12px;" onclick="renderGaleria()">← Voltar pra galeria</button>`;
+}
+function toggleGaleriaFav(id){
+  const img = DB.galeriaData.find(i=>i.id===id);
+  if(!img) return;
+  img.fav = !img.fav;
+  saveDB(); openGaleriaImage(id);
+}
+function deleteGaleriaImage(id){
+  if(!confirm('Excluir essa imagem? Essa ação não pode ser desfeita.')) return;
+  DB.galeriaData = DB.galeriaData.filter(i=>i.id!==id);
+  saveDB(); renderGaleria(); toast('Imagem excluída');
+}
+function saveGaleriaImageInfo(id){
+  const img = DB.galeriaData.find(i=>i.id===id);
+  if(!img) return;
+  img.title = document.getElementById('gal-title').value.trim();
+  img.desc = document.getElementById('gal-desc').value.trim();
+  img.album = document.getElementById('gal-album').value;
+  img.tags = document.getElementById('gal-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  saveDB(); renderGaleria(); toast('Salvo!', true);
+}
+
+/* ---------------- 📊 ESTATÍSTICAS ---------------- */
+function statBar(label, value, max, color){
+  const pct = max>0 ? Math.min(100, Math.round(value/max*100)) : 0;
+  return `
+    <div style="margin-bottom:12px;">
+      <div style="display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:4px;">
+        <span>${esc(label)}</span><span style="font-weight:700;">${value}</span>
+      </div>
+      <div style="height:8px; border-radius:999px; background:rgba(0,0,0,0.06); overflow:hidden;">
+        <div style="height:100%; width:${pct}%; background:${color||'var(--verde)'}; border-radius:999px;"></div>
+      </div>
+    </div>`;
+}
+function statNumberCard(emoji, value, label){
+  return `
+    <div class="item-card" style="text-align:center; flex:1;">
+      <div style="font-size:22px;">${emoji}</div>
+      <div style="font-size:20px; font-weight:700; margin-top:4px;">${value}</div>
+      <div class="item-meta">${esc(label)}</div>
+    </div>`;
+}
+function renderEstatisticas(){
+  const body = document.getElementById('body-estatisticas');
+  const today = todayStr();
+  let html = '';
+
+  // Tarefas
+  const tasksDone = DB.tasks.filter(t=>t.done).length;
+  const tasksPending = DB.tasks.filter(t=>!t.done).length;
+  const tasksLate = DB.tasks.filter(t=>!t.done && t.date && t.date<today).length;
+  html += `<div class="section-label" style="margin-top:0;">✅ Tarefas</div>`;
+  html += `<div style="display:flex; gap:10px; margin-bottom:18px;">`;
+  html += statNumberCard('✅', tasksDone, 'Concluídas');
+  html += statNumberCard('🕓', tasksPending, 'Pendentes');
+  html += statNumberCard('⚠️', tasksLate, 'Atrasadas');
+  html += `</div>`;
+
+  // Hábitos
+  html += `<div class="section-label">🔄 Hábitos</div>`;
+  html += `<div class="item-card">`;
+  const streakDays = (DB.streak && DB.streak.current) || 0;
+  html += statBar('Sequência atual (dias)', streakDays, Math.max(streakDays,30), 'var(--amarelo-escuro)');
+  html += statBar('Hábitos cadastrados', DB.habits.length, Math.max(DB.habits.length,10));
+  html += `</div>`;
+
+  // Metas
+  html += `<div class="section-label">🎯 Metas</div>`;
+  const goalsDone = DB.goals.filter(g=>g.progress>=100).length;
+  html += `<div style="display:flex; gap:10px; margin-bottom:18px;">`;
+  html += statNumberCard('🎯', DB.goals.length, 'Ativas/Totais');
+  html += statNumberCard('✅', goalsDone, 'Concluídas');
+  html += `</div>`;
+
+  // Estudos
+  html += `<div class="section-label">🏫 Estudos</div>`;
+  const trabalhosDone = DB.trabalhos.filter(t=>t.grade!=null && t.grade!=='').length;
+  const trabalhosPending = DB.trabalhos.filter(t=>t.grade==null || t.grade==='').length;
+  html += `<div style="display:flex; gap:10px; margin-bottom:18px;">`;
+  html += statNumberCard('📚', DB.trabalhos.length, 'Trabalhos/Provas');
+  html += statNumberCard('📊', trabalhosDone, 'Já com nota');
+  html += statNumberCard('⏳', trabalhosPending, 'Aguardando nota');
+  html += `</div>`;
+
+  // Gaming (só se instalado)
+  if(isModuleInstalled('gaming')){
+    const games = DB.gamingData;
+    const gDone = games.filter(g=>g.status==='Concluído').length;
+    const gPlaying = games.filter(g=>g.status==='Jogando').length;
+    const totalHours = games.reduce((s,g)=>s+(Number(g.hours)||0),0);
+    html += `<div class="section-label">🎮 Gaming</div>`;
+    html += `<div style="display:flex; gap:10px; margin-bottom:18px;">`;
+    html += statNumberCard('✅', gDone, 'Concluídos');
+    html += statNumberCard('▶️', gPlaying, 'Jogando');
+    html += statNumberCard('🕒', totalHours, 'Horas registradas');
+    html += `</div>`;
+  }
+
+  // Biblioteca (só se instalada)
+  if(isModuleInstalled('biblioteca')){
+    const livros = DB.bibliotecaData;
+    const lDone = livros.filter(l=>l.status==='Lido').length;
+    const pagesRead = livros.reduce((s,l)=>s+(Number(l.pagesRead)||0),0);
+    html += `<div class="section-label">📚 Biblioteca</div>`;
+    html += `<div style="display:flex; gap:10px; margin-bottom:18px;">`;
+    html += statNumberCard('✅', lDone, 'Livros lidos');
+    html += statNumberCard('📄', pagesRead, 'Páginas lidas');
+    html += `</div>`;
+  }
+
+  body.innerHTML = html;
 }
 
 /* ---------------- PWA: service worker + instalação ---------------- */
