@@ -766,11 +766,6 @@ body.eco-mode .module-card, body.eco-mode .back-btn, body.eco-mode .icon-btn, bo
       <h1 id="fora-title">Fora da Home</h1>
     </div>
     <div class="module-grid" style="grid-template-columns:1fr;">
-      <button class="module-card wide" data-mid="trabalhos" onclick="openModule('trabalhos', event)">
-        <div class="icon icon-agenda">📚</div>
-        <div class="title">Trabalhos e Provas</div>
-        <div class="sub" id="count-trabalhos-fora">0 próximos</div>
-      </button>
       <button class="module-card wide" data-mid="ai" onclick="openModule('ai', event)">
         <div class="icon icon-metas">🤖</div>
         <div class="title">LifeOS AI</div>
@@ -846,6 +841,11 @@ body.eco-mode .module-card, body.eco-mode .back-btn, body.eco-mode .icon-btn, bo
         <div class="icon icon-metas">📊</div>
         <div class="title">Notas</div>
         <div class="sub" id="count-notas">0 pendentes</div>
+      </button>
+      <button class="module-card" data-mid="trabalhos" onclick="openModule('trabalhos', event)">
+        <div class="icon icon-agenda">📚</div>
+        <div class="title">Trabalhos e Provas</div>
+        <div class="sub" id="count-trabalhos">0 próximos</div>
       </button>
     </div>
   </div>
@@ -1038,6 +1038,11 @@ if(!DB.bibliotecaData){ DB.bibliotecaData=[]; }     // v7.0: [{id, title, author
 if(!DB.galeriaData){ DB.galeriaData=[]; }           // v7.0: [{id, image, title, desc, album, tags:[], date, fav}]
 if(!DB.galeriaAlbums){ DB.galeriaAlbums=[]; }       // v7.0: [{id, name}]
 DB.settings.version='7.0';
+// v7.0: força módulos da loja sempre "fora da Home", e move Trabalhos pra Home
+const foraModuleIds = ['gaming','biblioteca','estatisticas','vocabulario','checklist','galeria'];
+foraModuleIds.forEach(id=>{ if(DB.installedModules[id]) DB.installedModules[id].showOnHome = false; });
+// mover Trabalhos de fora pra home (faz parte do core agora visualmente)
+// TODO: renderAll() junta Trabalhos ao grid da Home automaticamente se data-mid="trabalhos"
 if(DB._isFreshInstall){ DB.settings.lastSeenVersion = DB.settings.version; delete DB._isFreshInstall; }
 saveDB();
 
@@ -1411,7 +1416,6 @@ function renderStore(){
   if(installedIds.length>0){
     html += `<div class="settings-group"><h3>✅ Instalados</h3>`;
     installedIds.forEach(m=>{
-      const onHome = moduleShowsOnHome(m.id);
       html += `
         <div class="settings-row" style="flex-direction:column; align-items:stretch; gap:10px;">
           <div style="display:flex; align-items:center; gap:12px;">
@@ -1420,10 +1424,6 @@ function renderStore(){
               <div class="lbl">${esc(m.title)}</div>
               <div class="desc">${esc(m.desc)}</div>
             </div>
-          </div>
-          <div class="settings-row" style="padding:0;">
-            <div><div class="lbl" style="font-size:13px;">Mostrar na Home</div><div class="desc">Desligado, fica só aqui na Loja</div></div>
-            <div class="switch ${onHome?'on':''}" onclick="toggleModuleHome('${m.id}')"><div class="knob"></div></div>
           </div>
           <button class="btn-secondary" style="color:var(--danger); border-color:var(--danger);" onclick="confirmRemoveModule('${m.id}')">Remover módulo</button>
         </div>`;
@@ -1709,7 +1709,7 @@ function renderAll(){
   document.getElementById('count-agenda').textContent = DB.agenda.length+' eventos';
   document.getElementById('count-metas').textContent = DB.goals.length+' ativas';
   document.getElementById('count-habitos').textContent = DB.habits.length+' rotinas';
-  document.getElementById('count-trabalhos-fora').textContent = DB.trabalhos.filter(t=>t.date>=today).length+' próximos';
+  document.getElementById('count-trabalhos').textContent = DB.trabalhos.filter(t=>t.date>=today).length+' próximos';
   document.getElementById('count-assuntos').textContent = DB.assuntos.length+' registros';
   document.getElementById('count-notas').textContent = DB.trabalhos.filter(t=>t.date<=today && !t.grade && (!t.postponeUntil||t.postponeUntil<=today)).length+' pendentes';
 
@@ -1738,27 +1738,20 @@ function syncInstalledModuleCards(){
   const foraGrid = document.querySelector('#screen-fora .module-grid');
   if(!homeGrid || !foraGrid) return;
 
-  // remove cards de módulos da loja que já existiam de uma renderização anterior,
-  // sem tocar em nenhum card fixo do app (eles não têm essa marca)
   document.querySelectorAll('[data-store-module]').forEach(el=>el.remove());
 
   STORE_CATALOG.forEach(m=>{
     if(!isModuleInstalled(m.id)) return;
     const card = document.createElement('button');
-    card.className = 'module-card';
+    card.className = 'module-card wide';
     card.setAttribute('data-mid', m.id);
     card.setAttribute('data-store-module', '1');
     card.onclick = (evt)=>openModule(m.id, evt);
     card.innerHTML = `
       <div class="icon" style="background:rgba(0,0,0,0.06);">${m.emoji}</div>
       <div class="title">${esc(m.title)}</div>
-      <div class="sub">Módulo da Loja</div>`;
-    if(moduleShowsOnHome(m.id)){
-      homeGrid.appendChild(card);
-    } else {
-      card.classList.add('wide');
-      foraGrid.appendChild(card);
-    }
+      <div class="sub">${esc(m.desc)}</div>`;
+    foraGrid.appendChild(card); // v7.0: módulos da loja SEMPRE em "Fora da Home"
   });
 }
 function fmtDate(d){
